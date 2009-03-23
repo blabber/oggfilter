@@ -9,4 +9,6 @@ CFLAGS+=	-I/usr/local/include
 LDFLAGS+=	-L/usr/local/lib 
 LDADD+=		-lvorbisfile
 
+CTAGS= 		ctags
+
 .include <bsd.prog.mk>
