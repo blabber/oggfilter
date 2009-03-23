@@ -1,14 +1,14 @@
-PROG=	oggfilter
+PROG=           oggfilter
 
-NO_MAN=	yes
+NO_MAN=         yes
 
-CLEANFILES=	*.BAK *.core *.bak
+CLEANFILES=     *.BAK *.core *.bak
 
-CFLAGS+=	-Wall --ansi --pedantic
-CFLAGS+=	-I/usr/local/include
-LDFLAGS+=	-L/usr/local/lib 
-LDADD+=		-lvorbisfile
+CFLAGS+=        -Wall --ansi --pedantic
+CFLAGS+=        -I/usr/local/include
+LDFLAGS+=       -L/usr/local/lib 
+LDADD+=	        -lvorbisfile
 
-CTAGS= 		ctags
+CTAGS=          ctags
 
 .include <bsd.prog.mk>

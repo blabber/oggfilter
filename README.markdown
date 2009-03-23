@@ -4,19 +4,22 @@ oggfilter
 What is it?
 -----------
 oggfilter is a commandline tool used to filter a set of ogg/vorbis files. It
-checks certain properties defined via command line switches an returns all
-files matching the filter criteria.
+checks certain properties defined via command line switches an returns all files
+matching the filter criteria.
 
 How can I use it?
 -----------------
-Filter all ogg/files for file playing longer than 2 minutes and shorter than
-300 seconds:
+
+### Filter songs using playtime
+Filter all ogg/files for file playing longer than 2 minutes and shorter than 300
+seconds:
 
 `find . -type f -name '*.ogg' | oggfilter -l 2:00 -L 300`
 
 As you can see the playtime can be given in the form `minutes:seconds` or
 `seconds`.
 
+### Filter files with relative paths
 If you are piping the content of a m3u playlist using relative paths to
 oggfilter you can provide a base directory using the `-d` parameter.
 
@@ -38,10 +41,8 @@ supporting an ANSI/C compiler and libvorbis. But this was written on a FreeBSD
 system an has not been tested on other platforms. 
 
 The supplied Makefile is a BSD-style Makefile an uses the FreeBSD-make
-infrastructure. This is not portable;)
-
-As oggfilter is pretty simple there should be no problem to write a simple
-Makefile for other platforms.
+infrastructure. This is not portable, but as oggfilter is pretty simple there
+should be no problem to write a simple Makefile for other platforms.
 
 Todo
 ----
