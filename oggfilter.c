@@ -68,16 +68,9 @@ main(int argc, char **argv)
 			return 0;
 		}
 
-	/*
-	 * XXX If option_directory is left NULL initialized the applicatione
-	 * coredumps - Anyone can tell me why?
-	 */
-	if (option_directory == NULL)
-		option_directory = malloc(0);
-
 	while (fgets(in, MAXLINE, stdin) != NULL) {
 		in[strlen(in) - 1] = '\0';
-		if (in[0] == '/') {
+		if (in[0] == '/' || option_directory == NULL) {
 			size = strlen(in) * sizeof(char);
 			filename = malloc(size + 1);
 			strncpy(filename, in, size);
