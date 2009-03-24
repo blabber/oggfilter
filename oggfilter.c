@@ -55,11 +55,11 @@ main(int argc, char **argv)
                         if (optarg[strlen(optarg) - 1] == '/') {
                                 size = strlen(optarg) * sizeof(char);
                                 option_directory = malloc(size + 1);
-                                strncpy(option_directory, optarg, size);
+                                strncpy(option_directory, optarg, size+1);
                         } else {
                                 size = (strlen(optarg) + 1) * sizeof(char);
                                 option_directory = malloc(size + 1);
-                                strncpy(option_directory, optarg, size);
+                                strncpy(option_directory, optarg, size+1);
                                 strncat(option_directory, "/", 1);
                         }
                         break;
@@ -82,11 +82,11 @@ main(int argc, char **argv)
                 if (in[0] == '/' || option_directory == NULL) {
                         size = strlen(in) * sizeof(char);
                         filename = malloc(size + 1);
-                        strncpy(filename, in, size);
+                        strncpy(filename, in, size+1);
                 } else {
                         size = (strlen(in) + strlen(option_directory)) * sizeof(char);
                         filename = malloc(size + 1);
-                        strncpy(filename, option_directory, size);
+                        strncpy(filename, option_directory, size+1);
                         strncat(filename, in, size - strlen(filename));
                 }
 
