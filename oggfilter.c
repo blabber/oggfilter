@@ -11,7 +11,9 @@
 #include <getopt.h>
 #include <string.h>
 #include <err.h>
+#include <regex.h>
 #include "vorbis/vorbisfile.h"
+#include "vorbis/codec.h"
 
 #define MAXLINE 1024
 
@@ -21,8 +23,11 @@ typedef struct {
         double          min_length;
         int             max_length_flag;
         double          max_length;
+        char           *expression;
+        int             expr_flags;
 }               filter;
 int             main(int argc, char **argv);
+int             check_comments(OggVorbis_File ovf, filter filter);
 int             check_file(char *filename, filter filter);
 int             check_time(OggVorbis_File ovf, filter);
 double          option_parse_double(char *option);
@@ -31,7 +36,9 @@ double          option_parse_double(char *option);
 static struct option longopts[] = {
         {"directory", required_argument, NULL, 'd'},
         {"min-length", required_argument, NULL, 'l'},
-        {"max-length", required_argument, NULL, 'L'}
+        {"max-length", required_argument, NULL, 'L'},
+        {"expression", required_argument, NULL, 'x'},
+        {"extended", no_argument, NULL, 'E'}
 };
 
 int
@@ -46,10 +53,12 @@ main(int argc, char **argv)
                 0,              /* min_length_flag */
                 0.0,            /* min_length */
                 0,              /* max_length_flag */
-                0.0             /* max_length */
+                0.0,            /* max_length */
+                NULL,            /* expression */
+                REG_ICASE
         };
 
-        while ((option = getopt_long(argc, argv, "hd:l:L:", longopts, NULL)) != -1)
+        while ((option = getopt_long(argc, argv, "hd:l:L:x:E", longopts, NULL)) != -1)
                 switch (option) {
                 case 'd':
                         if (optarg[strlen(optarg) - 1] == '/') {
@@ -71,9 +80,16 @@ main(int argc, char **argv)
                         filter.max_length_flag = 1;
                         filter.max_length = option_parse_double(optarg);
                         break;
+                case 'x':
+                        filter.expression = optarg;
+                        break;
+                case 'E':
+                        filter.expr_flags |= REG_EXTENDED;
+                        break;
                 case 'h':
                 default:
-                        printf("oggfilter [-l|--min-length length] [-L|--max-length length] [-d directory] [-h]");
+                        printf("oggfilter [-l|--min-length length] [-L|--max-length length] [-d directory]\n");
+                        printf("          [-x|--expression expression] [-E|--extended] [-h]");
                         return 0;
                 }
 
@@ -112,8 +128,9 @@ check_file(char *filename, filter filter)
         if (ov_fopen(filename, &ovf) != 0) {
                 warnx("Ooops... couldnt open '%s'. Is this really an ogg/vorbis file?", filename);
         } else {
-                if (check_time(ovf, filter))
-                        match = 1;
+                match = (check_time(ovf, filter));
+                if (match && filter.expression != NULL)
+                        match = check_comments(ovf, filter);
                 ov_clear(&ovf);
         }
         return match;
@@ -146,4 +163,22 @@ check_time(OggVorbis_File ovf, filter filter)
         if (filter.max_length_flag && filter.max_length <= time)
                 return 0;
         return 1;
+}
+
+int
+check_comments(OggVorbis_File ovf, filter filter)
+{
+        int             i;
+        vorbis_comment *ovc;
+        regex_t         preg;
+
+        if (regcomp(&preg, filter.expression, filter.expr_flags) == 0) {
+                if ((ovc = ov_comment(&ovf, -1)) != NULL) {
+                        for (i = 0; i < (*ovc).comments; i++)
+                                if (regexec(&preg, (*ovc).user_comments[i], 0, NULL, 0) == 0)
+                                        return 1;
+                }
+                regfree(&preg);
+        }
+        return 0;
 }
