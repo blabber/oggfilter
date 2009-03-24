@@ -91,7 +91,7 @@ main(int argc, char **argv)
                 }
 
                 if (check_file(filename, filter))
-                        printf("%s", filename);
+                        printf("%s\n", filename);
         }
 
         /* free all buffers */
