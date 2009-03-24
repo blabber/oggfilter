@@ -1,8 +1,8 @@
 /*-
  * "THE BEER-WARE LICENSE" (Revision 42):
- * <tobias.rehbein@web.de> wrote this file. As long as you retain this notice 
- * you can do whatever you want with this stuff. If we meet some day, and you 
- * think this stuff is worth it, you can buy me a beer in return.   
+ * <tobias.rehbein@web.de> wrote this file. As long as you retain this notice
+ * you can do whatever you want with this stuff. If we meet some day, and you
+ * think this stuff is worth it, you can buy me a beer in return.
  *                                                              Tobias Rehbein
  */
 
@@ -38,7 +38,8 @@ static struct option longopts[] = {
         {"min-length", required_argument, NULL, 'l'},
         {"max-length", required_argument, NULL, 'L'},
         {"expression", required_argument, NULL, 'x'},
-        {"extended", no_argument, NULL, 'E'}
+        {"extended", no_argument, NULL, 'E'},
+        {"invert", no_argument, NULL, 'v'}
 };
 
 int
@@ -49,26 +50,27 @@ main(int argc, char **argv)
         char            option;
         char           *option_directory = NULL;
         size_t          size;
+        int             invert = 0;
         filter          filter = {
                 0,              /* min_length_flag */
                 0.0,            /* min_length */
                 0,              /* max_length_flag */
                 0.0,            /* max_length */
-                NULL,            /* expression */
-                REG_ICASE
+                NULL,           /* expression */
+                REG_ICASE       /* expression flags */
         };
 
-        while ((option = getopt_long(argc, argv, "hd:l:L:x:E", longopts, NULL)) != -1)
+        while ((option = getopt_long(argc, argv, "hd:l:L:x:Ev", longopts, NULL)) != -1)
                 switch (option) {
                 case 'd':
                         if (optarg[strlen(optarg) - 1] == '/') {
                                 size = strlen(optarg) * sizeof(char);
                                 option_directory = malloc(size + 1);
-                                strncpy(option_directory, optarg, size+1);
+                                strncpy(option_directory, optarg, size + 1);
                         } else {
                                 size = (strlen(optarg) + 1) * sizeof(char);
                                 option_directory = malloc(size + 1);
-                                strncpy(option_directory, optarg, size+1);
+                                strncpy(option_directory, optarg, size + 1);
                                 strncat(option_directory, "/", 1);
                         }
                         break;
@@ -86,10 +88,13 @@ main(int argc, char **argv)
                 case 'E':
                         filter.expr_flags |= REG_EXTENDED;
                         break;
+                case 'v':
+                        invert = 1;
+                        break;
                 case 'h':
                 default:
                         printf("oggfilter [-l|--min-length length] [-L|--max-length length] [-d directory]\n");
-                        printf("          [-x|--expression expression] [-E|--extended] [-h]");
+                        printf("          [-x|--expression expression] [-E|--extended] [-v|--invert] [-h]");
                         return 0;
                 }
 
@@ -98,15 +103,15 @@ main(int argc, char **argv)
                 if (in[0] == '/' || option_directory == NULL) {
                         size = strlen(in) * sizeof(char);
                         filename = malloc(size + 1);
-                        strncpy(filename, in, size+1);
+                        strncpy(filename, in, size + 1);
                 } else {
                         size = (strlen(in) + strlen(option_directory)) * sizeof(char);
                         filename = malloc(size + 1);
-                        strncpy(filename, option_directory, size+1);
+                        strncpy(filename, option_directory, size + 1);
                         strncat(filename, in, size - strlen(filename));
                 }
 
-                if (check_file(filename, filter))
+                if (check_file(filename, filter) ^ invert)
                         printf("%s\n", filename);
         }
 

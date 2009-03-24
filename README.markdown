@@ -42,6 +42,12 @@ Passing the `-E` parameter you can use extended regular expressions:
  * oggfilter uses regular expressions always in a case insensitive ways
  * at the moment only one regular expression can be passed to oggfilter
 
+### Invert results
+To select all ogg/vorbis files with a genre different than "Power Metal" you can
+use:
+
+`find . -type f -name '*.ogg' | oggfilter -v -x 'genre=power metal'`
+
 Why was it written?
 -------------------
 I haven't checked for existing code that's doing what I'm doing here. Instead I
@@ -60,10 +66,9 @@ should be no problem to write a simple Makefile for other platforms.
 
 Todo
 ----
- * One additional filter I definitely want to implement ist quality.
+ * One additional filter I definitely want to implement is quality.
  * A way to provide more than one regular expression to oggfilter would be 
    nice.
- * There should be a way to invert the result set (think `grep -v`).
  * The code should handle error conditions better to improve robustness.
  * parse_option_double() should be redone. A the moment funny things happen when
    you use switches like `-l 3:120` (this will filter for files with a minimum
