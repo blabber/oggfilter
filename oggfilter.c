@@ -53,9 +53,9 @@ int
 main(int argc, char **argv)
 {
         char            in[MAXLINE];
-        char           *filename = NULL;
+        char           *filename = NULL, *option_directory = NULL;
+        char            *newline;
         char            option;
-        char           *option_directory = NULL;
         size_t          size;
         int             invert = 0;
         filter          filter = {
@@ -119,7 +119,8 @@ main(int argc, char **argv)
                 }
 
         while (fgets(in, MAXLINE, stdin) != NULL) {
-                in[strlen(in) - 1] = '\0';
+                if ((newline = strchr(in, '\n'))!=NULL)
+                        newline[0] = '\0';
                 if (in[0] == '/' || option_directory == NULL) {
                         size = strlen(in) * sizeof(char);
                         filename = malloc(size + 1);
