@@ -25,8 +25,13 @@ typedef struct {
         double          max_length;
         char           *expression;
         int             expr_flags;
+        int             min_bitrate_flag;
+        long            min_bitrate;
+        int             max_bitrate_flag;
+        long            max_bitrate;
 }               filter;
 int             main(int argc, char **argv);
+int             check_bitrate(OggVorbis_File ovf, filter filter);
 int             check_comments(OggVorbis_File ovf, filter filter);
 int             check_file(char *filename, filter filter);
 int             check_time(OggVorbis_File ovf, filter);
@@ -39,7 +44,9 @@ static struct option longopts[] = {
         {"max-length", required_argument, NULL, 'L'},
         {"expression", required_argument, NULL, 'x'},
         {"extended", no_argument, NULL, 'E'},
-        {"invert", no_argument, NULL, 'v'}
+        {"invert", no_argument, NULL, 'v'},
+        {"min-bitrate", required_argument, NULL, 'b'},
+        {"max-bitrate", required_argument, NULL, 'B'}
 };
 
 int
@@ -57,10 +64,14 @@ main(int argc, char **argv)
                 0,              /* max_length_flag */
                 0.0,            /* max_length */
                 NULL,           /* expression */
-                REG_ICASE       /* expression flags */
+                REG_ICASE,      /* expr_flags */
+                0,              /* min_bitrate_flag */
+                0L,             /* min_bitrate */
+                0,              /* max_bitrate_flag */
+                0L              /* max_bitrate */
         };
 
-        while ((option = getopt_long(argc, argv, "hd:l:L:x:Ev", longopts, NULL)) != -1)
+        while ((option = getopt_long(argc, argv, "hd:l:L:x:Evb:B:", longopts, NULL)) != -1)
                 switch (option) {
                 case 'd':
                         if (optarg[strlen(optarg) - 1] == '/') {
@@ -88,13 +99,22 @@ main(int argc, char **argv)
                 case 'E':
                         filter.expr_flags |= REG_EXTENDED;
                         break;
+                case 'b':
+                        filter.min_bitrate_flag = 1;
+                        filter.min_bitrate = strtol(optarg, (char **)NULL, 10);
+                        break;
+                case 'B':
+                        filter.max_bitrate_flag = 1;
+                        filter.max_bitrate = strtol(optarg, (char **)NULL, 10);
+                        break;
                 case 'v':
                         invert = 1;
                         break;
                 case 'h':
                 default:
                         printf("oggfilter [-l|--min-length length] [-L|--max-length length] [-d directory]\n");
-                        printf("          [-x|--expression expression] [-E|--extended] [-v|--invert] [-h]");
+                        printf("          [-x|--expression expression] [-E|--extended] [-v|--invert]\n");
+                        printf("          [-b|--min-bitrate bitrate] [-B|--max-bitrate] [h]\n");
                         return 0;
                 }
 
@@ -134,8 +154,10 @@ check_file(char *filename, filter filter)
                 warnx("Ooops... couldnt open '%s'. Is this really an ogg/vorbis file?", filename);
         } else {
                 match = (check_time(ovf, filter));
-                if (match && filter.expression != NULL)
+                if (match)
                         match = check_comments(ovf, filter);
+                if (match)
+                        match = check_bitrate(ovf, filter);
                 ov_clear(&ovf);
         }
         return match;
@@ -177,13 +199,35 @@ check_comments(OggVorbis_File ovf, filter filter)
         vorbis_comment *ovc;
         regex_t         preg;
 
-        if (regcomp(&preg, filter.expression, filter.expr_flags) == 0) {
-                if ((ovc = ov_comment(&ovf, -1)) != NULL) {
-                        for (i = 0; i < (*ovc).comments; i++)
-                                if (regexec(&preg, (*ovc).user_comments[i], 0, NULL, 0) == 0)
-                                        return 1;
+        if (filter.expression != NULL)
+                if (regcomp(&preg, filter.expression, filter.expr_flags) == 0) {
+                        if ((ovc = ov_comment(&ovf, -1)) != NULL) {
+                                for (i = 0; i < (*ovc).comments; i++)
+                                        if (regexec(&preg, (*ovc).user_comments[i], 0, NULL, 0) == 0)
+                                                return 1;
+                                return (0);
+                        }
+                        regfree(&preg);
+                        return (1);
                 }
-                regfree(&preg);
+        return 1;
+}
+
+int
+check_bitrate(OggVorbis_File ovf, filter filter)
+{
+        vorbis_info    *ovi;
+        long            nominal;
+
+        if (filter.max_bitrate_flag || filter.min_bitrate_flag) {
+                if ((ovi = ov_info(&ovf, -1)) != NULL) {
+                        nominal = (*ovi).bitrate_nominal;
+                        if (filter.min_bitrate_flag && filter.min_bitrate >= nominal)
+                                return (0);
+                        if (filter.max_bitrate_flag && filter.max_bitrate <= nominal)
+                                return (0);
+                }
+                return (1);
         }
-        return 0;
+        return (1);
 }

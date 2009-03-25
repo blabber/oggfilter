@@ -48,6 +48,12 @@ use:
 
 `find . -type f -name '*.ogg' | oggfilter -v -x 'genre=power metal'`
 
+### Match nominal bitrate
+To find all ogg/vorbis files with a nominal bitrate between 110000 an 
+120000 kbps use:
+
+`find . -type f -name '*.ogg' | oggfilter -b 110000 -B 120000`
+
 Why was it written?
 -------------------
 I haven't checked for existing code that's doing what I'm doing here. Instead I
@@ -66,7 +72,6 @@ should be no problem to write a simple Makefile for other platforms.
 
 Todo
 ----
- * One additional filter I definitely want to implement is quality.
  * A way to provide more than one regular expression to oggfilter would be 
    nice.
  * The code should handle error conditions better to improve robustness.
