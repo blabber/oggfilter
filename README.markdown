@@ -52,7 +52,7 @@ use:
 To find all ogg/vorbis files with a nominal bitrate between 110000 an 
 120000 kbps use:
 
-`find . -type f -name '*.ogg' | oggfilter -b 110000 -B 120000`
+`find . -type f -name '*.ogg' | oggfilter -b 110 -B 120`
 
 Why was it written?
 -------------------

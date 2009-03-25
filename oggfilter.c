@@ -6,10 +6,10 @@
  *                                                              Tobias Rehbein
  */
 
- /* Ideas:
-  *  - allow more than one expression per oggfilter invocation
-  *  - proper documentation (man page)
-  */
+/*
+ * Ideas: - allow more than one expression per oggfilter invocation - proper
+ * documentation (man page)
+ */
 
 #include <stdlib.h>
 #include <stdio.h>
@@ -110,11 +110,11 @@ main(int argc, char **argv)
                         break;
                 case 'b':
                         filter.min_bitrate_flag = 1;
-                        filter.min_bitrate = strtol(optarg, (char **)NULL, 10);
+                        filter.min_bitrate = strtol(optarg, (char **)NULL, 10) * 1000;
                         break;
                 case 'B':
                         filter.max_bitrate_flag = 1;
-                        filter.max_bitrate = strtol(optarg, (char **)NULL, 10);
+                        filter.max_bitrate = strtol(optarg, (char **)NULL, 10) * 1000;
                         break;
                 case 'v':
                         invert = 1;
