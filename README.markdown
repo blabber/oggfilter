@@ -39,7 +39,7 @@ Passing the `-E` parameter you can use extended regular expressions:
 `find . -type f -name '*.ogg' | oggfilter -E -x 'genre=(death|black) metal'`
 
 #### NOTES
- * oggfilter uses regular expressions always in a case insensitive ways
+ * oggfilter uses regular expressions always in a case insensitive way
  * at the moment only one regular expression can be passed to oggfilter
 
 ### Invert results
@@ -69,18 +69,6 @@ system an has not been tested on other platforms.
 The supplied Makefile is a BSD-style Makefile an uses the FreeBSD-make
 infrastructure. This is not portable, but as oggfilter is pretty simple there
 should be no problem to write a simple Makefile for other platforms.
-
-Todo
-----
- * A way to provide more than one regular expression to oggfilter would be 
-   nice.
- * The code should handle error conditions better to improve robustness.
- * parse_option_double() should be redone. A the moment funny things happen when
-   you use switches like `-l 3:120` (this will filter for files with a minimum
-   playtime of 5 minutes).
- * The Documentation should be heavily improved (maybe a man page?). But - well
-   you know - Documentation is booooring...
- * Code cleanup.
 
 License
 -------

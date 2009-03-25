@@ -2,7 +2,7 @@ PROG=           oggfilter
 
 NO_MAN=         yes
 
-CLEANFILES=     *.BAK *.core *.bak
+CLEANFILES=     *.[Bb][Aa][Kk] *.core
 
 CFLAGS+=        -Wall --ansi --pedantic
 CFLAGS+=        -I/usr/local/include

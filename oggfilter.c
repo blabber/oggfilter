@@ -6,6 +6,11 @@
  *                                                              Tobias Rehbein
  */
 
+ /* Ideas:
+  *  - allow more than one expression per oggfilter invocation
+  *  - proper documentation (man page)
+  */
+
 #include <stdlib.h>
 #include <stdio.h>
 #include <getopt.h>
@@ -16,6 +21,7 @@
 #include "vorbis/codec.h"
 
 #define MAXLINE 1024
+#define BUFFLEN 256
 
 /* prototypes */
 typedef struct {
@@ -30,6 +36,7 @@ typedef struct {
         int             max_bitrate_flag;
         long            max_bitrate;
 }               filter;
+
 int             main(int argc, char **argv);
 int             check_bitrate(OggVorbis_File ovf, filter filter);
 int             check_comments(OggVorbis_File ovf, filter filter);
@@ -45,6 +52,7 @@ static struct option longopts[] = {
         {"expression", required_argument, NULL, 'x'},
         {"extended", no_argument, NULL, 'E'},
         {"invert", no_argument, NULL, 'v'},
+        {"help", no_argument, NULL, 'h'},
         {"min-bitrate", required_argument, NULL, 'b'},
         {"max-bitrate", required_argument, NULL, 'B'}
 };
@@ -54,7 +62,7 @@ main(int argc, char **argv)
 {
         char            in[MAXLINE];
         char           *filename = NULL, *option_directory = NULL;
-        char            *newline;
+        char           *newline;
         char            option;
         size_t          size;
         int             invert = 0;
@@ -71,6 +79,7 @@ main(int argc, char **argv)
                 0L              /* max_bitrate */
         };
 
+        /* parse command line switches */
         while ((option = getopt_long(argc, argv, "hd:l:L:x:Evb:B:", longopts, NULL)) != -1)
                 switch (option) {
                 case 'd':
@@ -114,12 +123,14 @@ main(int argc, char **argv)
                 default:
                         printf("oggfilter [-l|--min-length length] [-L|--max-length length] [-d directory]\n");
                         printf("          [-x|--expression expression] [-E|--extended] [-v|--invert]\n");
-                        printf("          [-b|--min-bitrate bitrate] [-B|--max-bitrate] [h]\n");
+                        printf("          [-b|--min-bitrate bitrate] [-B|--max-bitrate]\n");
+                        printf("oggfilter [-h|--help]\n");
                         return 0;
                 }
 
+        /* main loop */
         while (fgets(in, MAXLINE, stdin) != NULL) {
-                if ((newline = strchr(in, '\n'))!=NULL)
+                if ((newline = strchr(in, '\n')) != NULL)
                         newline[0] = '\0';
                 if (in[0] == '/' || option_directory == NULL) {
                         size = strlen(in) * sizeof(char);
@@ -153,14 +164,14 @@ check_file(char *filename, filter filter)
 
         if (ov_fopen(filename, &ovf) != 0) {
                 warnx("Ooops... couldnt open '%s'. Is this really an ogg/vorbis file?", filename);
-        } else {
-                match = (check_time(ovf, filter));
-                if (match)
-                        match = check_comments(ovf, filter);
-                if (match)
-                        match = check_bitrate(ovf, filter);
-                ov_clear(&ovf);
+                return (0);
         }
+        match = (check_time(ovf, filter));
+        match = (match && check_comments(ovf, filter));
+        match = (match && check_bitrate(ovf, filter));
+
+        ov_clear(&ovf);
+
         return match;
 }
 
@@ -170,6 +181,13 @@ option_parse_double(char *option)
         char           *minutes, *seconds;
         double          parsed;
 
+        /*
+         * TODO Rework the parsing code
+         * 
+         * This code basically works but funny things can happen if you don't
+         * obey the mm:ss format. 1:120 parses for example to 3 minutes. This
+         * is not a feature ;)
+         */
         if (strchr(option, ':') == NULL)
                 parsed = strtod(option, (char **)NULL);
         else {
@@ -178,6 +196,7 @@ option_parse_double(char *option)
                 parsed = (int)strtol(minutes, (char **)NULL, 10) * 60;
                 parsed += (int)strtol(seconds, (char **)NULL, 10);
         }
+
         return parsed;
 }
 
@@ -186,32 +205,50 @@ check_time(OggVorbis_File ovf, filter filter)
 {
         double          time;
         time = ov_time_total(&ovf, -1);
+
         if (filter.min_length_flag && filter.min_length >= time)
                 return 0;
         if (filter.max_length_flag && filter.max_length <= time)
                 return 0;
+
         return 1;
 }
 
 int
 check_comments(OggVorbis_File ovf, filter filter)
 {
-        int             i;
+        int             i, errc;
+        int             match = 0;
+        char            errstr[BUFFLEN + 1];
         vorbis_comment *ovc;
         regex_t         preg;
 
-        if (filter.expression != NULL)
-                if (regcomp(&preg, filter.expression, filter.expr_flags) == 0) {
-                        if ((ovc = ov_comment(&ovf, -1)) != NULL) {
-                                for (i = 0; i < (*ovc).comments; i++)
-                                        if (regexec(&preg, (*ovc).user_comments[i], 0, NULL, 0) == 0)
-                                                return 1;
-                                return (0);
-                        }
-                        regfree(&preg);
-                        return (1);
-                }
-        return 1;
+        if (filter.expression == NULL)
+                return (1);
+
+        /*
+         * TODO This needs to be factored out
+         * 
+         * There's no reason to recompile the regulare expression for every
+         * ogg/vorbis file.
+         */
+        if ((errc = regcomp(&preg, filter.expression, filter.expr_flags))) {
+                regerror(errc, &preg, errstr, BUFFLEN);
+                regfree(&preg);
+                errx(1, "can't compile regex '%s': %s", filter.expression, errstr);
+        }
+        if ((ovc = ov_comment(&ovf, -1)) == NULL) {
+                /* TODO The name of the failed file should be listed here */
+                warnx("Ooops... couldnt read vorbiscomments. Skipping.");
+        } else {
+                for (i = 0; i < (*ovc).comments; i++)
+                        if (regexec(&preg, (*ovc).user_comments[i], 0, NULL, 0) == 0)
+                                match = 1;
+        }
+
+        regfree(&preg);
+
+        return match;
 }
 
 int
@@ -220,15 +257,17 @@ check_bitrate(OggVorbis_File ovf, filter filter)
         vorbis_info    *ovi;
         long            nominal;
 
-        if (filter.max_bitrate_flag || filter.min_bitrate_flag) {
-                if ((ovi = ov_info(&ovf, -1)) != NULL) {
-                        nominal = (*ovi).bitrate_nominal;
-                        if (filter.min_bitrate_flag && filter.min_bitrate >= nominal)
-                                return (0);
-                        if (filter.max_bitrate_flag && filter.max_bitrate <= nominal)
-                                return (0);
-                }
-                return (1);
+        if ((ovi = ov_info(&ovf, -1)) == NULL) {
+                /* TODO The name of the failed file should be listed here */
+                warnx("Ooops... couldnt read vorbis info. Skipping.");
+                return (0);
         }
+        nominal = (*ovi).bitrate_nominal;
+
+        if (filter.min_bitrate_flag && filter.min_bitrate >= nominal)
+                return (0);
+        if (filter.max_bitrate_flag && filter.max_bitrate <= nominal)
+                return (0);
+
         return (1);
 }
