@@ -94,9 +94,7 @@ Documentation
                    oggfilter -d /my/music -x '^genre=.*metal$' < relative.m3u
 
         DIAGNOSTICS
-             Messages should be self-explanatory even though the messages emited when
-             there was an error reading vorbiscomments or vorbis info are missing the
-             filenames at the moment.
+             Messages should be self-explanatory.
         
              The oggfilter utility exits 0 on success, and >0 if an error occurs.
 

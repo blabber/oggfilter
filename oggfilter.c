@@ -39,8 +39,8 @@ typedef struct {
 }               filter;
 
 int             main(int argc, char **argv);
-int             check_bitrate(OggVorbis_File ovf, filter filter);
-int             check_comments(OggVorbis_File ovf, filter filter);
+int             check_bitrate(OggVorbis_File ovf, filter filter, char *filename);
+int             check_comments(OggVorbis_File ovf, filter filter, char *filename);
 int             check_file(char *filename, filter filter);
 int             check_time(OggVorbis_File ovf, filter);
 double          option_parse_double(char *option);
@@ -169,8 +169,8 @@ check_file(char *filename, filter filter)
                 return (0);
         }
         match = (check_time(ovf, filter));
-        match = (match && check_comments(ovf, filter));
-        match = (match && check_bitrate(ovf, filter));
+        match = (match && check_comments(ovf, filter, filename));
+        match = (match && check_bitrate(ovf, filter, filename));
 
         ov_clear(&ovf);
 
@@ -217,7 +217,7 @@ check_time(OggVorbis_File ovf, filter filter)
 }
 
 int
-check_comments(OggVorbis_File ovf, filter filter)
+check_comments(OggVorbis_File ovf, filter filter, char *filename)
 {
         int             i, errc;
         int             match = 0;
@@ -240,8 +240,7 @@ check_comments(OggVorbis_File ovf, filter filter)
                 errx(1, "can't compile regex '%s': %s", filter.expression, errstr);
         }
         if ((ovc = ov_comment(&ovf, -1)) == NULL) {
-                /* TODO The name of the failed file should be listed here */
-                warnx("Ooops... couldnt read vorbiscomments. Skipping.");
+                warnx("Ooops... couldnt read vorbiscomments for '%s'. Skipping.", filename);
         } else {
                 for (i = 0; i < (*ovc).comments; i++)
                         if (regexec(&preg, (*ovc).user_comments[i], 0, NULL, 0) == 0)
@@ -254,14 +253,13 @@ check_comments(OggVorbis_File ovf, filter filter)
 }
 
 int
-check_bitrate(OggVorbis_File ovf, filter filter)
+check_bitrate(OggVorbis_File ovf, filter filter, char *filename)
 {
         vorbis_info    *ovi;
         long            nominal;
 
         if ((ovi = ov_info(&ovf, -1)) == NULL) {
-                /* TODO The name of the failed file should be listed here */
-                warnx("Ooops... couldnt read vorbis info. Skipping.");
+                warnx("Ooops... couldnt read vorbis info for '%s'. Skipping.", filename);
                 return (0);
         }
         nominal = (*ovi).bitrate_nominal;
