@@ -1,0 +1,161 @@
+.\"
+.\"  "THE BEER-WARE LICENSE" (Revision 42):
+.\"  <tobias.rehbein@web.de> wrote this file. As long as you retain this notice
+.\"  you can do whatever you want with this stuff. If we meet some day, and you
+.\"  think this stuff is worth it, you can buy me a beer in return.
+.\"                                                               Tobias Rehbein
+.\"  
+.
+.Dd March 25, 2009
+.Os 
+.Dt OGGFILTER 1
+.
+.Sh NAME
+.
+.Nm oggfilter
+.Nd filter a list of ogg/vorbis files using various citeria
+.
+.
+.Sh SYNOPSIS
+.
+.Nm
+.Op Fl l | Fl -min-length Ar period
+.Op Fl L | Fl -max-length Ar period
+.Op Fl b | Fl -min-bitrate Ar bitrate
+.Op Fl B | Fl -max-bitrate Ar bitrate
+.Op Fl x | Fl -expression Ar regexp
+.Op Fl d | Fl -directory Ar directory
+.Op Fl E | Fl -extended
+.Op Fl v | Fl -invert
+.Pp
+.Nm
+.Brq Fl h | Fl -help
+.
+.
+.Sh DESCRIPTION
+.
+The
+.Nm
+utility reads sequentially a list of ogg/vorbis files from standard input  and
+filters this list using various criteria defined via command line options. All
+ogg/vorbis files matching these criteria are written to standard output.
+.Pp
+All specified criteria are combined using logical AND.
+.Pp
+These are the available command line options:
+.
+.Bl -tag
+.It Fl l | Fl -min-length Ar period
+Matches every ogg/vorbis file with a play time longer than the specified 
+.Ar period .
+.Ar period 
+may be expressed as seconds or in minutes:seconds syntax. 
+.
+.It Fl L | Fl -max-length Ar period
+Matches every ogg/vorbis file with a play time shorter than the specified 
+.Ar period .
+.Ar period 
+may be expressed as seconds or in minutes:seconds syntax. 
+.
+.It Fl b | Fl -min-bitrate Ar bitrate
+Matches every ogg/vorbis file with a nominal bitrate higher than
+.Ar bitrate
+kbps
+.
+.It Fl B | Fl -max-bitrate Ar bitrate
+Matches every ogg/vorbis file with a nominal bitrate lower than
+.Ar bitrate
+kbps
+.
+.It Fl x | Fl -expression Ar regexp
+Matches every ogg/vorbis file containing at least one vorbiscomment matching
+the regular expression
+.Ar regexp .
+The regular expression matching is always case-insensitive.
+.
+.It Fl d | Fl -directory Ar directory
+Prepends every line read from standard input with 
+.Ar directory
+if the first character of the line is not a slash.
+.
+.It Fl E | Fl -extended
+Interpret 
+.Ar regexp
+as an extended regular expression rather than basic regular expressions.
+See 
+.Xr re_format 7
+for a complete discussion of regular expression formats.
+.
+.It Fl v | Fl -invert
+Invert the result set - return all ogg/vorbis files not matching the specified
+criteria.
+.
+.It Fl h | Fl -help
+Print the synopsis of 
+.Nm
+and exit. This overrides any other options.
+.
+.
+.Sh EXAMPLES
+To get a list of all your ogg/vorbis files tagged with genre 
+.Dq Thrash Metal
+use the following command line:
+.Pp
+.Dl find /my/music -type f -name '*.ogg' | oggfilter -x '^genre=thrash metal$'
+.Pp
+To filter a list of ogg/vorbis files for files not tagged as
+.Dq Neo Folk
+or
+.Dq Power Metal
+you may use:
+.Pp
+.Dl oggfilter -v -E -x '^genre=(neo folk|power metal)$' < playlist.m3u
+.Pp
+To get a list of all ogg/vorbis files with a maximum playtime of 5 minutes and
+a minimum playtime of 3 minutes you may use:
+.Pp
+.Dl oggfilter -l 180 -L 5:00 < playlist.m3u
+.Pp
+To get a list of ogg/vorbis files encoded with a minimal nominal bitrate of
+120 kbps use:
+.Pp
+.Dl oggfilter -b 120 < playlist.m3u
+.Pp
+If you are piping from a playlist containing relative paths you can tell
+oggfilter to prepend a base path to the read ogg/vorbis files:
+.Pp
+.Dl oggfilter -d /my/music -x '^genre=.*metal$' < relative.m3u
+.
+.
+.Sh DIAGNOSTICS
+Messages should be self-explanatory even though the messages emited when there 
+was an error reading vorbiscomments or vorbis info are missing the filenames 
+at the moment.
+
+.Ex -std
+.
+.
+.Sh SEE ALSO
+.Xr re_format 7 , 
+.Xr vorbiscomment 1
+.
+.
+.Sh AUTHORS
+.
+.An "Tobias Rehbein" Aq tobias.rehbein@web.de
+.
+.
+.Sh BUGS
+The code parsing 
+.Ar period
+behaves funny when parsing a
+.Ar period
+formatted like
+.Ql 1:120
+which is interpreted as 
+.Ql "3 minutes" .
+.Pp
+Expect some rough edges as this was my first take on a C program.
+.
+.
+.Be

@@ -1,7 +1,5 @@
 PROG=           oggfilter
 
-NO_MAN=         yes
-
 CLEANFILES=     *.[Bb][Aa][Kk] *.core
 
 CFLAGS+=        -Wall --ansi --pedantic

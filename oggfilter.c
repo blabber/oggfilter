@@ -7,8 +7,9 @@
  */
 
 /*
- * Ideas: - allow more than one expression per oggfilter invocation - proper
- * documentation (man page)
+ * Ideas: 
+ *
+ * - allow more than one expression per oggfilter invocation
  */
 
 #include <stdlib.h>
@@ -121,10 +122,11 @@ main(int argc, char **argv)
                         break;
                 case 'h':
                 default:
-                        printf("oggfilter [-l|--min-length length] [-L|--max-length length] [-d directory]\n");
-                        printf("          [-x|--expression expression] [-E|--extended] [-v|--invert]\n");
+                        printf("oggfilter [-l|--min-length period] [-L|--max-length period]\n");
                         printf("          [-b|--min-bitrate bitrate] [-B|--max-bitrate]\n");
-                        printf("oggfilter [-h|--help]\n");
+                        printf("          [-x|--expression expression] [-d|--directory directory]\n");
+                        printf("          [-E|--extended] [-v|--invert]\n\n");
+                        printf("oggfilter {-h|--help}\n");
                         return 0;
                 }
 

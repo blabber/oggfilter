@@ -3,3 +3,4 @@ oggfilter
 *.o
 *.[Bb][Aa][Kk]
 *.core
+*.gz

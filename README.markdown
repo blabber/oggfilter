@@ -1,67 +1,121 @@
 oggfilter
 =========
 
-What is it?
------------
-oggfilter is a commandline tool used to filter a set of ogg/vorbis files. It
-checks certain properties defined via command line switches an returns all files
-matching the filter criteria.
+Documentation
+-------------
+        OGGFILTER(1)            FreeBSD General Commands Manual           OGGFILTER(1)
 
-How can I use it?
------------------
+        NAME
+             oggfilter -- filter a list of ogg/vorbis files using various citeria
 
-### Filter songs using playtime
-Filter all ogg/files for file playing longer than 2 minutes and shorter than 300
-seconds:
+        SYNOPSIS
+             oggfilter [-l | --min-length period] [-L | --max-length period]
+                       [-b | --min-bitrate bitrate] [-B | --max-bitrate bitrate]
+                       [-x | --expression regexp] [-d | --directory directory]
+                       [-E | --extended] [-v | --invert]
 
-`find . -type f -name '*.ogg' | oggfilter -l 2:00 -L 300`
+             oggfilter {-h | --help}
 
-As you can see the playtime can be given in the form `minutes:seconds` or
-`seconds`.
+        DESCRIPTION
+             The oggfilter utility reads sequentially a list of ogg/vorbis files from
+             standard input  and filters this list using various criteria defined via
+             command line options. All ogg/vorbis files matching these criteria are
+             written to standard output.
 
-### Filter files with relative paths
-If you are piping the content of a m3u playlist using relative paths to
-oggfilter you can provide a base directory using the `-d` parameter.
+             All specified criteria are combined using logical AND.
 
-`oggfilter -d /my/music -l 2:30 < relative.m3u`
+             These are the available command line options:
 
-The value passed using the `-d` parameter will be prepended to any filename not
-starting with a slash '/'.
+             -l | --min-length period
+                         Matches every ogg/vorbis file with a play time longer than
+                         the specified period.  period may be expressed as seconds or
+                         in minutes:seconds syntax.
 
-### Matching arbitrary vorbiscomments
-If you want to filter for arbitrary vorbiscomments you can use regular
-expressions.  If you want to filter for a given genre you can use:
+             -L | --max-length period
+                         Matches every ogg/vorbis file with a play time shorter than
+                         the specified period.  period may be expressed as seconds or
+                         in minutes:seconds syntax.
 
-`find . -type f -name '*.ogg' | oggfilter -x 'genre=black metal'`
+             -b | --min-bitrate bitrate
+                         Matches every ogg/vorbis file with a nominal bitrate higher
+                         than bitrate kbps
 
-Passing the `-E` parameter you can use extended regular expressions:
+             -B | --max-bitrate bitrate
+                         Matches every ogg/vorbis file with a nominal bitrate lower
+                         than bitrate kbps
 
-`find . -type f -name '*.ogg' | oggfilter -E -x 'genre=(death|black) metal'`
+             -x | --expression regexp
+                         Matches every ogg/vorbis file containing at least one vorbis-
+                         comment matching the regular expression regexp.  The regular
+                         expression matching is always case-insensitive.
 
-#### NOTES
- * oggfilter uses regular expressions always in a case insensitive way
- * at the moment only one regular expression can be passed to oggfilter
+             -d | --directory directory
+                         Prepends every line read from standard input with directory
+                         if the first character of the line is not a slash.
 
-### Invert results
-To select all ogg/vorbis files with a genre different than "Power Metal" you can
-use:
+             -E | --extended
+                         Interpret regexp as an extended regular expression rather
+                         than basic regular expressions.  See re_format(7) for a com-
+                         plete discussion of regular expression formats.
 
-`find . -type f -name '*.ogg' | oggfilter -v -x 'genre=power metal'`
+             -v | --invert
+                         Invert the result set - return all ogg/vorbis files not
+                         matching the specified criteria.
 
-### Match nominal bitrate
-To find all ogg/vorbis files with a nominal bitrate between 110000 an 
-120000 kbps use:
+             -h | --help
+                         Print the synopsis of oggfilter and exit. This overrides any
+                         other options.
 
-`find . -type f -name '*.ogg' | oggfilter -b 110 -B 120`
+        EXAMPLES
+             To get a list of all your ogg/vorbis files tagged with genre ``Thrash
+             Metal'' use the following command line:
 
-Why was it written?
--------------------
-I haven't checked for existing code that's doing what I'm doing here. Instead I
-thought this would be a tangible project to make my first practical experiences
-in C. 
+                   find /my/music -type f -name '*.ogg' | oggfilter -x '^genre=thrash
+                   metal$'
 
-Portability issues?
--------------------
+             To filter a list of ogg/vorbis files for files not tagged as ``Neo Folk''
+             or ``Power Metal'' you may use:
+
+                   oggfilter -v -E -x '^genre=(neo folk|power metal)$' < playlist.m3u
+
+             To get a list of all ogg/vorbis files with a maximum playtime of 5 min-
+             utes and a minimum playtime of 3 minutes you may use:
+
+                   oggfilter -l 180 -L 5:00 < playlist.m3u
+
+             To get a list of ogg/vorbis files encoded with a minimal nominal bitrate
+             of 120 kbps use:
+
+                   oggfilter -b 120 < playlist.m3u
+
+             If you are piping from a playlist containing relative paths you can tell
+             oggfilter to prepend a base path to the read ogg/vorbis files:
+
+                   oggfilter -d /my/music -x '^genre=.*metal$' < relative.m3u
+
+        DIAGNOSTICS
+             Messages should be self-explanatory even though the messages emited when
+             there was an error reading vorbiscomments or vorbis info are missing the
+             filenames at the moment.
+        
+             The oggfilter utility exits 0 on success, and >0 if an error occurs.
+
+        SEE ALSO
+             re_format(7), vorbiscomment(1)
+
+        AUTHORS
+             Tobias Rehbein <tobias.rehbein@web.de>
+
+        BUGS
+             The code parsing period behaves funny when parsing a period formatted
+             like `1:120' which is interpreted as `3 minutes'.
+
+             Expect some rough edges as this was my first take on a C program.
+
+        FreeBSD 7.1                     March 25, 2009                     FreeBSD 7.1
+
+Portability issues
+------------------
 This program was written in ANSI/C so it should compile on every platform
 supporting an ANSI/C compiler and libvorbis. But this was written on a FreeBSD
 system an has not been tested on other platforms. 
@@ -69,6 +123,13 @@ system an has not been tested on other platforms.
 The supplied Makefile is a BSD-style Makefile an uses the FreeBSD-make
 infrastructure. This is not portable, but as oggfilter is pretty simple there
 should be no problem to write a simple Makefile for other platforms.
+
+Contributing
+------------
+The code for oggfilter is hosted at [github]("http://www.github.com/tobreh/oggfilter").
+Feel free to fork.  
+
+Comments, patches and pull request are highly appreciated.
 
 License
 -------
@@ -79,8 +140,3 @@ License
          * think this stuff is worth it, you can buy me a beer in return.   
          *                                                              Tobias Rehbein
          */
-
-Last words
-----------
-As this is a learning-by-doing project any help, patches, pull-requests  or
-comments regarding the code will be greatly appreciated.
