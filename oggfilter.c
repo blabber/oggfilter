@@ -6,8 +6,8 @@
  *                                                              Tobias Rehbein
  */
 
-/*
- * Ideas: 
+/**
+ * Ideas:
  *
  * - allow more than one expression per oggfilter invocation
  */
@@ -36,13 +36,13 @@ typedef struct {
         long            min_bitrate;
         int             max_bitrate_flag;
         long            max_bitrate;
-}               filter;
+}               filter_t;
 
 int             main(int argc, char **argv);
-int             check_bitrate(OggVorbis_File ovf, filter filter, char *filename);
-int             check_comments(OggVorbis_File ovf, filter filter, char *filename);
-int             check_file(char *filename, filter filter);
-int             check_time(OggVorbis_File ovf, filter);
+int             check_bitrate(OggVorbis_File ovf, filter_t * filter, char *filename);
+int             check_comments(OggVorbis_File ovf, filter_t * filter, char *filename);
+int             check_file(char *filename, filter_t * filter);
+int             check_time(OggVorbis_File ovf, filter_t * filter);
 double          option_parse_double(char *option);
 
 /* options descriptor */
@@ -67,7 +67,7 @@ main(int argc, char **argv)
         char            option;
         size_t          size;
         int             invert = 0;
-        filter          filter = {
+        filter_t        filter = {
                 0,              /* min_length_flag */
                 0.0,            /* min_length */
                 0,              /* max_length_flag */
@@ -145,7 +145,7 @@ main(int argc, char **argv)
                         strncat(filename, in, size - strlen(filename));
                 }
 
-                if (check_file(filename, filter) ^ invert)
+                if (check_file(filename, &filter) ^ invert)
                         printf("%s\n", filename);
         }
 
@@ -159,7 +159,7 @@ main(int argc, char **argv)
 }
 
 int
-check_file(char *filename, filter filter)
+check_file(char *filename, filter_t * filter)
 {
         OggVorbis_File  ovf;
         int             match = 0;
@@ -203,29 +203,29 @@ option_parse_double(char *option)
 }
 
 int
-check_time(OggVorbis_File ovf, filter filter)
+check_time(OggVorbis_File ovf, filter_t * filter)
 {
         double          time;
         time = ov_time_total(&ovf, -1);
 
-        if (filter.min_length_flag && filter.min_length >= time)
+        if (filter->min_length_flag && filter->min_length >= time)
                 return 0;
-        if (filter.max_length_flag && filter.max_length <= time)
+        if (filter->max_length_flag && filter->max_length <= time)
                 return 0;
 
         return 1;
 }
 
 int
-check_comments(OggVorbis_File ovf, filter filter, char *filename)
+check_comments(OggVorbis_File ovf, filter_t * filter, char *filename)
 {
         int             i, errc;
         int             match = 0;
         char            errstr[BUFFLEN + 1];
         vorbis_comment *ovc;
-        regex_t         preg;
+        regex_t         regex;
 
-        if (filter.expression == NULL)
+        if (filter->expression == NULL)
                 return (1);
 
         /*
@@ -234,26 +234,26 @@ check_comments(OggVorbis_File ovf, filter filter, char *filename)
          * There's no reason to recompile the regulare expression for every
          * ogg/vorbis file.
          */
-        if ((errc = regcomp(&preg, filter.expression, filter.expr_flags))) {
-                regerror(errc, &preg, errstr, BUFFLEN);
-                regfree(&preg);
-                errx(1, "can't compile regex '%s': %s", filter.expression, errstr);
+        if ((errc = regcomp(&regex, filter->expression, filter->expr_flags))) {
+                regerror(errc, &regex, errstr, BUFFLEN);
+                regfree(&regex);
+                errx(1, "can't compile regex '%s': %s", filter->expression, errstr);
         }
         if ((ovc = ov_comment(&ovf, -1)) == NULL) {
                 warnx("Ooops... couldnt read vorbiscomments for '%s'. Skipping.", filename);
         } else {
                 for (i = 0; i < (*ovc).comments; i++)
-                        if (regexec(&preg, (*ovc).user_comments[i], 0, NULL, 0) == 0)
+                        if (regexec(&regex, (*ovc).user_comments[i], 0, NULL, 0) == 0)
                                 match = 1;
         }
 
-        regfree(&preg);
+        regfree(&regex);
 
         return match;
 }
 
 int
-check_bitrate(OggVorbis_File ovf, filter filter, char *filename)
+check_bitrate(OggVorbis_File ovf, filter_t * filter, char *filename)
 {
         vorbis_info    *ovi;
         long            nominal;
@@ -264,9 +264,9 @@ check_bitrate(OggVorbis_File ovf, filter filter, char *filename)
         }
         nominal = (*ovi).bitrate_nominal;
 
-        if (filter.min_bitrate_flag && filter.min_bitrate >= nominal)
+        if (filter->min_bitrate_flag && filter->min_bitrate >= nominal)
                 return (0);
-        if (filter.max_bitrate_flag && filter.max_bitrate <= nominal)
+        if (filter->max_bitrate_flag && filter->max_bitrate <= nominal)
                 return (0);
 
         return (1);
