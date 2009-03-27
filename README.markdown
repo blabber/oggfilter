@@ -99,7 +99,7 @@ Documentation
              The oggfilter utility exits 0 on success, and >0 if an error occurs.
         
         SEE ALSO
-             re_format(7), vorbiscomment(1)
+             re_format(7), vorbiscomment(1), ogginfo(1)
         
         AUTHORS
              Tobias Rehbein <tobias.rehbein@web.de>
