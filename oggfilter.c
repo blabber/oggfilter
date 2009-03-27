@@ -30,12 +30,12 @@ typedef struct {
         double          min_length;
         int             max_length_flag;
         double          max_length;
-        char           *expression;
-        int             expr_flags;
         int             min_bitrate_flag;
         long            min_bitrate;
         int             max_bitrate_flag;
         long            max_bitrate;
+        int             expression_flag;
+        regex_t         expression;
 }               filter_t;
 
 int             main(int argc, char **argv);
@@ -43,6 +43,7 @@ int             check_bitrate(OggVorbis_File ovf, filter_t * filter, char *filen
 int             check_comments(OggVorbis_File ovf, filter_t * filter, char *filename);
 int             check_file(char *filename, filter_t * filter);
 int             check_time(OggVorbis_File ovf, filter_t * filter);
+void            compile_regex(filter_t * filter, char *expression, int expr_flags);
 double          option_parse_double(char *option);
 
 /* options descriptor */
@@ -62,22 +63,24 @@ int
 main(int argc, char **argv)
 {
         char            in[MAXLINE];
-        char           *filename = NULL, *option_directory = NULL;
+        char           *filename = NULL, *option_directory = NULL, *expression = NULL;
         char           *newline;
+        char            errstr[BUFFLEN + 1];
         char            option;
         size_t          size;
-        int             invert = 0;
+        int             errc;
+        int             invert = 0, expr_flags = REG_ICASE;
         filter_t        filter = {
                 0,              /* min_length_flag */
                 0.0,            /* min_length */
                 0,              /* max_length_flag */
                 0.0,            /* max_length */
-                NULL,           /* expression */
-                REG_ICASE,      /* expr_flags */
                 0,              /* min_bitrate_flag */
                 0L,             /* min_bitrate */
                 0,              /* max_bitrate_flag */
-                0L              /* max_bitrate */
+                0L,             /* max_bitrate */
+                0               /* expression_flag */
+                /* expression */
         };
 
         /* parse command line switches */
@@ -104,10 +107,10 @@ main(int argc, char **argv)
                         filter.max_length = option_parse_double(optarg);
                         break;
                 case 'x':
-                        filter.expression = optarg;
+                        expression = optarg;
                         break;
                 case 'E':
-                        filter.expr_flags |= REG_EXTENDED;
+                        expr_flags |= REG_EXTENDED;
                         break;
                 case 'b':
                         filter.min_bitrate_flag = 1;
@@ -129,11 +132,13 @@ main(int argc, char **argv)
                         printf("oggfilter {-h|--help}\n");
                         return 0;
                 }
+        compile_regex(&filter, expression, expr_flags);
 
         /* main loop */
         while (fgets(in, MAXLINE, stdin) != NULL) {
                 if ((newline = strchr(in, '\n')) != NULL)
                         newline[0] = '\0';
+
                 if (in[0] == '/' || option_directory == NULL) {
                         size = strlen(in) * sizeof(char);
                         filename = malloc(size + 1);
@@ -149,11 +154,13 @@ main(int argc, char **argv)
                         printf("%s\n", filename);
         }
 
-        /* free all buffers */
+        /* free all resources */
         if (option_directory != NULL)
                 free(option_directory);
         if (filename != NULL)
                 free(filename);
+        if (filter.expression_flag)
+                regfree(&filter.expression);
 
         return 0;
 }
@@ -219,37 +226,21 @@ check_time(OggVorbis_File ovf, filter_t * filter)
 int
 check_comments(OggVorbis_File ovf, filter_t * filter, char *filename)
 {
-        int             i, errc;
-        int             match = 0;
-        char            errstr[BUFFLEN + 1];
+        int             i;
         vorbis_comment *ovc;
-        regex_t         regex;
 
-        if (filter->expression == NULL)
+        if (!filter->expression_flag)
                 return (1);
 
-        /*
-         * TODO This needs to be factored out
-         * 
-         * There's no reason to recompile the regulare expression for every
-         * ogg/vorbis file.
-         */
-        if ((errc = regcomp(&regex, filter->expression, filter->expr_flags))) {
-                regerror(errc, &regex, errstr, BUFFLEN);
-                regfree(&regex);
-                errx(1, "can't compile regex '%s': %s", filter->expression, errstr);
-        }
         if ((ovc = ov_comment(&ovf, -1)) == NULL) {
                 warnx("Ooops... couldnt read vorbiscomments for '%s'. Skipping.", filename);
-        } else {
-                for (i = 0; i < (*ovc).comments; i++)
-                        if (regexec(&regex, (*ovc).user_comments[i], 0, NULL, 0) == 0)
-                                match = 1;
+                return (1);
         }
+        for (i = 0; i < ovc->comments; i++)
+                if (regexec(&(filter->expression), ovc->user_comments[i], 0, NULL, 0) == 0)
+                        return (1);
 
-        regfree(&regex);
-
-        return match;
+        return (0);
 }
 
 int
@@ -270,4 +261,20 @@ check_bitrate(OggVorbis_File ovf, filter_t * filter, char *filename)
                 return (0);
 
         return (1);
+}
+
+void
+compile_regex(filter_t * filter, char *expression, int expr_flags)
+{
+        int             errc;
+        char            errstr[BUFFLEN + 1];
+
+        if (expression == NULL)
+                return;
+
+        if ((errc = regcomp(&filter->expression, expression, expr_flags))) {
+                regerror(errc, &filter->expression, errstr, BUFFLEN);
+                errx(1, "can't compile regex '%s': %s", expression, errstr);
+        }
+        filter->expression_flag = 1;
 }
