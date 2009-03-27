@@ -65,10 +65,8 @@ main(int argc, char **argv)
         char            in[MAXLINE];
         char           *filename = NULL, *option_directory = NULL, *expression = NULL;
         char           *newline;
-        char            errstr[BUFFLEN + 1];
         char            option;
         size_t          size;
-        int             errc;
         int             invert = 0, expr_flags = REG_ICASE;
         filter_t        filter = {
                 0,              /* min_length_flag */
