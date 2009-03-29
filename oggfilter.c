@@ -21,10 +21,10 @@
 #include "vorbis/vorbisfile.h"
 #include "vorbis/codec.h"
 
-#define MAXLINE 1024
-#define BUFFLEN 256
+#define MAXLINE         1024
+#define BUFFLEN         256
+#define R_PERIOD        "^([[:digit:]]{1,})(:([0-5][[:digit:]]))?$"
 
-/* prototypes */
 typedef struct {
         int             min_length_flag;
         double          min_length;
@@ -38,13 +38,14 @@ typedef struct {
         regex_t         expression;
 }               filter_t;
 
+/* prototypes */
 int             main(int argc, char **argv);
 int             check_bitrate(OggVorbis_File ovf, filter_t * filter, char *filename);
 int             check_comments(OggVorbis_File ovf, filter_t * filter, char *filename);
 int             check_file(char *filename, filter_t * filter);
 int             check_time(OggVorbis_File ovf, filter_t * filter);
-void            compile_regex(filter_t * filter, char *expression, int expr_flags);
-double          option_parse_double(char *option);
+int             compile_regex(regex_t * preg, char *expression, int expr_flags);
+double          parse_period(char *option);
 
 /* options descriptor */
 static struct option longopts[] = {
@@ -98,11 +99,11 @@ main(int argc, char **argv)
                         break;
                 case 'l':
                         filter.min_length_flag = 1;
-                        filter.min_length = option_parse_double(optarg);
+                        filter.min_length = parse_period(optarg);
                         break;
                 case 'L':
                         filter.max_length_flag = 1;
-                        filter.max_length = option_parse_double(optarg);
+                        filter.max_length = parse_period(optarg);
                         break;
                 case 'x':
                         expression = optarg;
@@ -130,13 +131,17 @@ main(int argc, char **argv)
                         printf("oggfilter {-h|--help}\n");
                         return 0;
                 }
-        compile_regex(&filter, expression, expr_flags);
+        filter.expression_flag = compile_regex(&filter.expression, expression, expr_flags);
 
         /* main loop */
         while (fgets(in, MAXLINE, stdin) != NULL) {
                 if ((newline = strchr(in, '\n')) != NULL)
                         newline[0] = '\0';
 
+                /*
+                 * TODO there's no need to re-malloc memory for every read
+                 * line
+                 */
                 if (in[0] == '/' || option_directory == NULL) {
                         size = strlen(in) * sizeof(char);
                         filename = malloc(size + 1);
@@ -183,25 +188,34 @@ check_file(char *filename, filter_t * filter)
 }
 
 double
-option_parse_double(char *option)
+parse_period(char *option)
 {
-        char           *minutes, *seconds;
-        double          parsed;
+        static int      regex_compiled = 0;
+        static regex_t  period_regexp;
+        char           *seconds;
+        char           *minutes = NULL;
+        double          parsed = 0;
+        size_t          nmatch = 4;
+        regmatch_t      pmatch[4];
 
-        /*
-         * TODO Rework the parsing code
-         * 
-         * This code basically works but funny things can happen if you don't
-         * obey the mm:ss format. 1:120 parses for example to 3 minutes. This
-         * is not a feature ;)
-         */
-        if (strchr(option, ':') == NULL)
-                parsed = strtod(option, (char **)NULL);
-        else {
-                minutes = strsep(&option, ":");
-                seconds = strsep(&option, ":");
-                parsed = (int)strtol(minutes, (char **)NULL, 10) * 60;
-                parsed += (int)strtol(seconds, (char **)NULL, 10);
+        if (!regex_compiled)
+                regex_compiled = compile_regex(&period_regexp, R_PERIOD, REG_EXTENDED);
+
+        if (regexec(&period_regexp, option, nmatch, pmatch, 0) == 0) {
+                if (pmatch[2].rm_so == -1)
+                        seconds = option;
+                else {
+                        minutes = option;
+                        option[pmatch[2].rm_so] = '\0';
+                        seconds = &option[pmatch[3].rm_so];
+                }
+
+                if (minutes != NULL)
+                        parsed = strtol(minutes, (char **)NULL, 10) * 60;
+                parsed += strtol(seconds, (char **)NULL, 10);
+        } else {
+                warnx("could not parse time format: '%s'", option);
+                errx(1, "use 'minutes:seconds' or 'seconds'");
         }
 
         return parsed;
@@ -261,18 +275,18 @@ check_bitrate(OggVorbis_File ovf, filter_t * filter, char *filename)
         return (1);
 }
 
-void
-compile_regex(filter_t * filter, char *expression, int expr_flags)
+int
+compile_regex(regex_t * preg, char *expression, int expr_flags)
 {
         int             errc;
         char            errstr[BUFFLEN + 1];
 
         if (expression == NULL)
-                return;
+                return (0);
 
-        if ((errc = regcomp(&filter->expression, expression, expr_flags))) {
-                regerror(errc, &filter->expression, errstr, BUFFLEN);
+        if ((errc = regcomp(preg, expression, expr_flags))) {
+                regerror(errc, preg, errstr, BUFFLEN);
                 errx(1, "can't compile regex '%s': %s", expression, errstr);
         }
-        filter->expression_flag = 1;
+        return (1);
 }
