@@ -18,8 +18,8 @@
 #include <string.h>
 #include <err.h>
 #include <regex.h>
-#include "vorbis/vorbisfile.h"
 #include "vorbis/codec.h"
+#include "vorbis/vorbisfile.h"
 
 #define MAXLINE         1024
 #define BUFFLEN         256
@@ -63,12 +63,15 @@ static struct option longopts[] = {
 int
 main(int argc, char **argv)
 {
-        char            in[MAXLINE];
-        char           *filename = NULL, *option_directory = NULL, *expression = NULL;
+        char           *filename_buffer = NULL;
+        char           *filename = NULL;
+        char           *expression = NULL;
+        char           *in = NULL;
         char           *newline;
         char            option;
-        size_t          size;
-        int             invert = 0, expr_flags = REG_ICASE;
+        int             invert = 0;
+        int             expr_flags = REG_ICASE;
+
         filter_t        filter = {
                 0,              /* min_length_flag */
                 0.0,            /* min_length */
@@ -87,14 +90,14 @@ main(int argc, char **argv)
                 switch (option) {
                 case 'd':
                         if (optarg[strlen(optarg) - 1] == '/') {
-                                size = strlen(optarg) * sizeof(char);
-                                option_directory = malloc(size + 1);
-                                strncpy(option_directory, optarg, size + 1);
+                                filename_buffer = malloc(strlen(optarg) * sizeof(char) + MAXLINE + 1);
+                                strncpy(filename_buffer, optarg, strlen(optarg) + 1);
+                                in = &filename_buffer[strlen(optarg)];
                         } else {
-                                size = (strlen(optarg) + 1) * sizeof(char);
-                                option_directory = malloc(size + 1);
-                                strncpy(option_directory, optarg, size + 1);
-                                strncat(option_directory, "/", 1);
+                                filename_buffer = malloc(strlen(optarg) * sizeof(char) + 1 + MAXLINE + 1);
+                                strncpy(filename_buffer, optarg, strlen(optarg));
+                                strncpy(&filename_buffer[strlen(optarg)], "/", 2);
+                                in = &filename_buffer[strlen(optarg) + 1];
                         }
                         break;
                 case 'l':
@@ -133,24 +136,19 @@ main(int argc, char **argv)
                 }
         filter.expression_flag = compile_regex(&filter.expression, expression, expr_flags);
 
+        if (filename_buffer == NULL) {
+                filename_buffer = malloc(MAXLINE + 1);
+                in = filename_buffer;
+        }
         /* main loop */
         while (fgets(in, MAXLINE, stdin) != NULL) {
                 if ((newline = strchr(in, '\n')) != NULL)
                         newline[0] = '\0';
 
-                /*
-                 * TODO there's no need to re-malloc memory for every read
-                 * line
-                 */
-                if (in[0] == '/' || option_directory == NULL) {
-                        size = strlen(in) * sizeof(char);
-                        filename = malloc(size + 1);
-                        strncpy(filename, in, size + 1);
+                if (in[0] == '/') {
+                        filename = in;
                 } else {
-                        size = (strlen(in) + strlen(option_directory)) * sizeof(char);
-                        filename = malloc(size + 1);
-                        strncpy(filename, option_directory, size + 1);
-                        strncat(filename, in, size - strlen(filename));
+                        filename = filename_buffer;
                 }
 
                 if (check_file(filename, &filter) ^ invert)
@@ -158,8 +156,6 @@ main(int argc, char **argv)
         }
 
         /* free all resources */
-        if (option_directory != NULL)
-                free(option_directory);
         if (filename != NULL)
                 free(filename);
         if (filter.expression_flag)
@@ -172,15 +168,15 @@ int
 check_file(char *filename, filter_t * filter)
 {
         OggVorbis_File  ovf;
-        int             match = 0;
+        int             match;
 
         if (ov_fopen(filename, &ovf) != 0) {
                 warnx("Ooops... couldnt open '%s'. Is this really an ogg/vorbis file?", filename);
-                return (0);
+                return 0;
         }
-        match = (check_time(ovf, filter));
-        match = (match && check_comments(ovf, filter, filename));
-        match = (match && check_bitrate(ovf, filter, filename));
+        match = check_time(ovf, filter);
+        match = match && check_bitrate(ovf, filter, filename);
+        match = match && check_comments(ovf, filter, filename);
 
         ov_clear(&ovf);
 
@@ -190,10 +186,10 @@ check_file(char *filename, filter_t * filter)
 double
 parse_period(char *option)
 {
-        static int      regex_compiled = 0;
+        static int      regex_compiled;
         static regex_t  period_regexp;
-        char           *seconds;
         char           *minutes = NULL;
+        char           *seconds;
         double          parsed = 0;
         size_t          nmatch = 4;
         regmatch_t      pmatch[4];
@@ -225,6 +221,7 @@ int
 check_time(OggVorbis_File ovf, filter_t * filter)
 {
         double          time;
+
         time = ov_time_total(&ovf, -1);
 
         if (filter->min_length_flag && filter->min_length >= time)
@@ -242,37 +239,37 @@ check_comments(OggVorbis_File ovf, filter_t * filter, char *filename)
         vorbis_comment *ovc;
 
         if (!filter->expression_flag)
-                return (1);
+                return 1;
 
         if ((ovc = ov_comment(&ovf, -1)) == NULL) {
                 warnx("Ooops... couldnt read vorbiscomments for '%s'. Skipping.", filename);
-                return (1);
+                return 1;
         }
         for (i = 0; i < ovc->comments; i++)
                 if (regexec(&(filter->expression), ovc->user_comments[i], 0, NULL, 0) == 0)
-                        return (1);
+                        return 1;
 
-        return (0);
+        return 0;
 }
 
 int
 check_bitrate(OggVorbis_File ovf, filter_t * filter, char *filename)
 {
-        vorbis_info    *ovi;
         long            nominal;
+        vorbis_info    *ovi;
 
         if ((ovi = ov_info(&ovf, -1)) == NULL) {
                 warnx("Ooops... couldnt read vorbis info for '%s'. Skipping.", filename);
-                return (0);
+                return 0;
         }
         nominal = (*ovi).bitrate_nominal;
 
         if (filter->min_bitrate_flag && filter->min_bitrate >= nominal)
-                return (0);
+                return 0;
         if (filter->max_bitrate_flag && filter->max_bitrate <= nominal)
-                return (0);
+                return 0;
 
-        return (1);
+        return 1;
 }
 
 int
@@ -282,11 +279,11 @@ compile_regex(regex_t * preg, char *expression, int expr_flags)
         char            errstr[BUFFLEN + 1];
 
         if (expression == NULL)
-                return (0);
+                return 0;
 
         if ((errc = regcomp(preg, expression, expr_flags))) {
                 regerror(errc, preg, errstr, BUFFLEN);
                 errx(1, "can't compile regex '%s': %s", expression, errstr);
         }
-        return (1);
+        return 1;
 }
