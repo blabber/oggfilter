@@ -145,11 +145,10 @@ main(int argc, char **argv)
                 if ((newline = strchr(in, '\n')) != NULL)
                         newline[0] = '\0';
 
-                if (in[0] == '/') {
+                if (in[0] == '/')
                         filename = in;
-                } else {
+                else
                         filename = filename_buffer;
-                }
 
                 if (check_file(filename, &filter) ^ invert)
                         printf("%s\n", filename);
@@ -262,7 +261,7 @@ check_bitrate(OggVorbis_File ovf, filter_t * filter, char *filename)
                 warnx("Ooops... couldnt read vorbis info for '%s'. Skipping.", filename);
                 return 0;
         }
-        nominal = (*ovi).bitrate_nominal;
+        nominal = ovi->bitrate_nominal;
 
         if (filter->min_bitrate_flag && filter->min_bitrate >= nominal)
                 return 0;
