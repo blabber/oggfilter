@@ -24,6 +24,8 @@
 #define MAXLINE         1024
 #define BUFFLEN         256
 #define R_PERIOD        "^([[:digit:]]{1,})(:([0-5][[:digit:]]))?$"
+#define TRY_MALLOC(v,s) if ((v = malloc(s)) == NULL) err(1 ,"%s" ,#v)
+
 
 typedef struct {
         int             min_length_flag;
@@ -90,11 +92,11 @@ main(int argc, char **argv)
                 switch (option) {
                 case 'd':
                         if (optarg[strlen(optarg) - 1] == '/') {
-                                filename_buffer = malloc(strlen(optarg) * sizeof(char) + MAXLINE + 1);
+                                TRY_MALLOC(filename_buffer, strlen(optarg) * sizeof(char) + MAXLINE + 1);
                                 strncpy(filename_buffer, optarg, strlen(optarg) + 1);
                                 in = &filename_buffer[strlen(optarg)];
                         } else {
-                                filename_buffer = malloc(strlen(optarg) * sizeof(char) + 1 + MAXLINE + 1);
+                                TRY_MALLOC(filename_buffer, strlen(optarg) * sizeof(char) + 1 + MAXLINE + 1);
                                 strncpy(filename_buffer, optarg, strlen(optarg));
                                 strncpy(&filename_buffer[strlen(optarg)], "/", 2);
                                 in = &filename_buffer[strlen(optarg) + 1];
@@ -137,7 +139,7 @@ main(int argc, char **argv)
         filter.expression_flag = compile_regex(&filter.expression, expression, expr_flags);
 
         if (filename_buffer == NULL) {
-                filename_buffer = malloc(MAXLINE + 1);
+                TRY_MALLOC(filename_buffer, MAXLINE + 1);
                 in = filename_buffer;
         }
         /* main loop */
@@ -170,7 +172,7 @@ check_file(char *filename, filter_t * filter)
         int             match;
 
         if (ov_fopen(filename, &ovf) != 0) {
-                warnx("Ooops... couldnt open '%s'. Is this really an ogg/vorbis file?", filename);
+                warnx("could not open file: %s", filename);
                 return 0;
         }
         match = check_time(ovf, filter);
@@ -209,8 +211,7 @@ parse_period(char *option)
                         parsed = strtol(minutes, (char **)NULL, 10) * 60;
                 parsed += strtol(seconds, (char **)NULL, 10);
         } else {
-                warnx("could not parse time format: '%s'", option);
-                errx(1, "use 'minutes:seconds' or 'seconds'");
+                errx(1, "could not parse time format: '%s'", option);
         }
 
         return parsed;
@@ -241,8 +242,8 @@ check_comments(OggVorbis_File ovf, filter_t * filter, char *filename)
                 return 1;
 
         if ((ovc = ov_comment(&ovf, -1)) == NULL) {
-                warnx("Ooops... couldnt read vorbiscomments for '%s'. Skipping.", filename);
-                return 1;
+                warnx("could not read vorbiscomments: %s", filename);
+                return 0;
         }
         for (i = 0; i < ovc->comments; i++)
                 if (regexec(&(filter->expression), ovc->user_comments[i], 0, NULL, 0) == 0)
@@ -258,7 +259,7 @@ check_bitrate(OggVorbis_File ovf, filter_t * filter, char *filename)
         vorbis_info    *ovi;
 
         if ((ovi = ov_info(&ovf, -1)) == NULL) {
-                warnx("Ooops... couldnt read vorbis info for '%s'. Skipping.", filename);
+                warnx("could not read vorbis info: %s", filename);
                 return 0;
         }
         nominal = ovi->bitrate_nominal;
