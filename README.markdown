@@ -6,7 +6,7 @@ Documentation
         OGGFILTER(1)            FreeBSD General Commands Manual           OGGFILTER(1)
 
         NAME
-             oggfilter -- filter a list of ogg/vorbis files using various citeria
+             oggfilter -- filter a list of ogg/vorbis files using various criteria
 
         SYNOPSIS
              oggfilter [-l | --min-length period] [-L | --max-length period]
@@ -115,7 +115,7 @@ This program was written in ANSI/C so it should compile on every platform
 supporting an ANSI/C compiler and libvorbis. But this was written on a FreeBSD
 system an has not been tested on other platforms. 
 
-The supplied Makefile is a BSD-style Makefile an uses the FreeBSD-make
+The supplied Makefile is a BSD-style Makefile and uses the FreeBSD-make
 infrastructure. This is not portable, but as oggfilter is pretty simple there
 should be no problem to write a simple Makefile for other platforms.
 
