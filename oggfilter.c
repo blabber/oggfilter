@@ -6,12 +6,6 @@
  *                                                              Tobias Rehbein
  */
 
-/**
- * Ideas:
- *
- * - allow more than one expression per oggfilter invocation
- */
-
 #include <stdlib.h>
 #include <stdio.h>
 #include <getopt.h>
