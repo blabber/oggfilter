@@ -32,14 +32,14 @@ typedef struct {
         long            max_bitrate;
         int             expression_flag;
         regex_t         expression;
-}               filter_t;
+} filter_t;
 
 /* prototypes */
 int             main(int argc, char **argv);
-int             check_bitrate(OggVorbis_File ovf, filter_t * filter, char *filename);
-int             check_comments(OggVorbis_File ovf, filter_t * filter, char *filename);
-int             check_file(char *filename, filter_t * filter);
-int             check_time(OggVorbis_File ovf, filter_t * filter);
+int             check_bitrate(OggVorbis_File ovf, filter_t *filter, char *filename);
+int             check_comments(OggVorbis_File ovf, filter_t *filter, char *filename);
+int             check_file(char *filename, filter_t *filter);
+int             check_time(OggVorbis_File ovf, filter_t *filter);
 int             compile_regex(regex_t * preg, char *expression, int expr_flags);
 double          parse_period(char *option);
 
@@ -160,7 +160,7 @@ main(int argc, char **argv)
 }
 
 int
-check_file(char *filename, filter_t * filter)
+check_file(char *filename, filter_t *filter)
 {
         OggVorbis_File  ovf;
         int             match;
@@ -212,7 +212,7 @@ parse_period(char *option)
 }
 
 int
-check_time(OggVorbis_File ovf, filter_t * filter)
+check_time(OggVorbis_File ovf, filter_t *filter)
 {
         double          time;
 
@@ -227,7 +227,7 @@ check_time(OggVorbis_File ovf, filter_t * filter)
 }
 
 int
-check_comments(OggVorbis_File ovf, filter_t * filter, char *filename)
+check_comments(OggVorbis_File ovf, filter_t *filter, char *filename)
 {
         int             i;
         vorbis_comment *ovc;
@@ -247,7 +247,7 @@ check_comments(OggVorbis_File ovf, filter_t * filter, char *filename)
 }
 
 int
-check_bitrate(OggVorbis_File ovf, filter_t * filter, char *filename)
+check_bitrate(OggVorbis_File ovf, filter_t *filter, char *filename)
 {
         long            nominal;
         vorbis_info    *ovi;
