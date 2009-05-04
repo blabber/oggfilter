@@ -98,7 +98,18 @@ and exit. This overrides any other options.
 .El
 .
 .
+.Sh ENVIRONMENT
+.
+.Nm
+peruses the
+.Ev LANG
+and
+.Ev LC_ALL
+environment variables to determine the systems locale. This is mandatory for
+expression matching.
+.
 .Sh EXAMPLES
+.
 To get a list of all your ogg/vorbis files tagged with genre 
 .Dq Thrash Metal
 use the following command line:
@@ -130,15 +141,19 @@ oggfilter to prepend a base path to the read ogg/vorbis files:
 .
 .
 .Sh DIAGNOSTICS
+.
 Messages should be self-explanatory.
 .Pp
 .Ex -std
 .
 .
 .Sh SEE ALSO
+.
 .Xr re_format 7 , 
 .Xr vorbiscomment 1 ,
-.Xr ogginfo 1 
+.Xr ogginfo 1 ,
+.Xr setlocale 3 ,
+.Xr environ 7
 .
 .
 .Sh AUTHORS
@@ -147,6 +162,7 @@ Messages should be self-explanatory.
 .
 .
 .Sh BUGS
+.
 Expect some rough edges as this was my first take on a C program.
 .
 .

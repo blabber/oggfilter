@@ -5,7 +5,7 @@ CLEANFILES=     *.[Bb][Aa][Kk] *.core
 CFLAGS+=        -Wall --ansi --pedantic
 CFLAGS+=        -I/usr/local/include
 LDFLAGS+=       -L/usr/local/lib 
-LDADD+=         -lvorbisfile
+LDADD+=         -lvorbisfile -liconv
 
 CTAGS=          ctags
 

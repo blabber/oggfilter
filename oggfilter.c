@@ -12,6 +12,8 @@
 #include <string.h>
 #include <err.h>
 #include <regex.h>
+#include <locale.h>
+#include <iconv.h>
 #include <vorbis/codec.h>
 #include <vorbis/vorbisfile.h>
 
@@ -41,6 +43,7 @@ int             check_comments(OggVorbis_File ovf, filter_t *filter, char *filen
 int             check_file(char *filename, filter_t *filter);
 int             check_time(OggVorbis_File ovf, filter_t *filter);
 int             compile_regex(regex_t * preg, char *expression, int expr_flags);
+int             convert(char *from, char *to, size_t tolen);
 double          parse_period(char *option);
 
 /* options descriptor */
@@ -55,6 +58,9 @@ static struct option longopts[] = {
         {"min-bitrate", required_argument, NULL, 'b'},
         {"max-bitrate", required_argument, NULL, 'B'}
 };
+
+/* Global variables */
+static iconv_t  cd;
 
 int
 main(int argc, char **argv)
@@ -80,6 +86,11 @@ main(int argc, char **argv)
                 0               /* expression_flag */
                 /* expression */
         };
+
+        if (!setlocale(LC_ALL, ""))
+                warnx("could not set locale");
+        if ((cd = iconv_open("char", "UTF-8")) == (iconv_t) (-1))
+                warnx("could not open conversion descriptor");
 
         /* parse command line switches */
         while ((option = getopt_long(argc, argv, "hd:l:L:x:Evb:B:", longopts, NULL)) != -1)
@@ -155,6 +166,8 @@ main(int argc, char **argv)
                 free(filename);
         if (filter.expression_flag)
                 regfree(&filter.expression);
+        if (cd != (iconv_t) (-1))
+                iconv_close(cd);
 
         return 0;
 }
@@ -231,6 +244,7 @@ check_comments(OggVorbis_File ovf, filter_t *filter, char *filename)
 {
         int             i;
         vorbis_comment *ovc;
+        static char     converted_comment[BUFFLEN];
 
         if (!filter->expression_flag)
                 return 1;
@@ -239,9 +253,11 @@ check_comments(OggVorbis_File ovf, filter_t *filter, char *filename)
                 warnx("could not read vorbiscomments: %s", filename);
                 return 0;
         }
-        for (i = 0; i < ovc->comments; i++)
-                if (regexec(&(filter->expression), ovc->user_comments[i], 0, NULL, 0) == 0)
-                        return 1;
+        for (i = 0; i < ovc->comments; i++) {
+                if (convert(ovc->user_comments[i], converted_comment, BUFFLEN) == 0)
+                        if (regexec(&(filter->expression), converted_comment, 0, NULL, 0) == 0)
+                                return 1;
+        }
 
         return 0;
 }
@@ -280,4 +296,28 @@ compile_regex(regex_t * preg, char *expression, int expr_flags)
                 errx(1, "can't compile regex '%s': %s", expression, errstr);
         }
         return 1;
+}
+
+int
+convert(char *from, char *to, size_t tolen)
+{
+        char          **fromp;
+        char          **top;
+        size_t          fromlen;
+
+        if (cd == (iconv_t)(-1))
+                return 1;
+
+        fromlen = strlen(from);
+        fromp = &from;
+        top = &to;
+
+        while (fromlen > 0)
+                if (iconv(cd, (const char **)fromp, &fromlen, top, &tolen) == (size_t) (-1)){
+                        warnx("could not convert: %s", from);
+                        return 1;
+                }
+        *top[0] = '\0';
+
+        return 0;
 }
