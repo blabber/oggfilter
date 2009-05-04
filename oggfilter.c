@@ -12,8 +12,8 @@
 #include <string.h>
 #include <err.h>
 #include <regex.h>
-#include "vorbis/codec.h"
-#include "vorbis/vorbisfile.h"
+#include <vorbis/codec.h>
+#include <vorbis/vorbisfile.h>
 
 #define MAXLINE         1024
 #define BUFFLEN         256
