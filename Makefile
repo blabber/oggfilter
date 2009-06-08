@@ -1,5 +1,5 @@
 PROG=		oggfilter
-SRCS=		${PROG}.c options.c
+SRCS=		${PROG}.c options.c checks.c
 
 CLEANFILES=	*.[Bb][Aa][Kk] *.core ${MAN1}.txt
 
