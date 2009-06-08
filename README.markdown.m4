@@ -1,3 +1,6 @@
+dnl !!! This is the template used to generate the README file for oggfilter(1).
+dnl !!! If you are looking for the actual README: it's named "README.markdown".
+
 oggfilter
 =========
 

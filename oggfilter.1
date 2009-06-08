@@ -25,7 +25,6 @@
 .Op Fl B | Fl -max-bitrate Ar bitrate
 .Op Fl x | Fl -expression Ar regexp
 .Op Fl d | Fl -directory Ar directory
-.Op Fl E | Fl -extended
 .Op Fl v | Fl -invert
 .Pp
 .Nm
@@ -69,22 +68,16 @@ kbps
 .
 .It Fl x | Fl -expression Ar regexp
 Matches every ogg/vorbis file containing at least one vorbiscomment matching
-the regular expression
+the extended regular expression
 .Ar regexp .
-The regular expression matching is always case-insensitive.
+The regular expression matching is always case-insensitive. See 
+.Xr re_format 7
+for a complete discussion of the extended regular expression format.
 .
 .It Fl d | Fl -directory Ar directory
 Prepends every line read from standard input with 
 .Ar directory
 if the first character of the line is not a slash.
-.
-.It Fl E | Fl -extended
-Interpret 
-.Ar regexp
-as an extended regular expression rather than basic regular expressions.
-See 
-.Xr re_format 7
-for a complete discussion of regular expression formats.
 .
 .It Fl v | Fl -invert
 Invert the result set - return all ogg/vorbis files not matching the specified

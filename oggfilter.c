@@ -16,10 +16,10 @@
 #include <iconv.h>
 #include <vorbis/codec.h>
 #include <vorbis/vorbisfile.h>
+#include "options.h"
 
 #define MAXLINE         1024
 #define BUFFLEN         256
-#define R_PERIOD        "^([[:digit:]]{1,})(:([0-5][[:digit:]]))?$"
 #define TRY_MALLOC(v,s) if ((v = malloc(s)) == NULL) err(1 ,"%s" ,#v)
 
 
@@ -46,33 +46,17 @@ int             compile_regex(regex_t * preg, char *expression, int expr_flags);
 int             convert(char *from, char *to, size_t tolen);
 double          parse_period(char *option);
 
-/* options descriptor */
-static struct option longopts[] = {
-        {"directory", required_argument, NULL, 'd'},
-        {"min-length", required_argument, NULL, 'l'},
-        {"max-length", required_argument, NULL, 'L'},
-        {"expression", required_argument, NULL, 'x'},
-        {"extended", no_argument, NULL, 'E'},
-        {"invert", no_argument, NULL, 'v'},
-        {"help", no_argument, NULL, 'h'},
-        {"min-bitrate", required_argument, NULL, 'b'},
-        {"max-bitrate", required_argument, NULL, 'B'}
-};
-
 /* Global variables */
 static iconv_t  cd;
 
 int
-main(int argc, char **argv)
+main(int argc, char *argv[])
 {
         char           *filename_buffer = NULL;
         char           *filename = NULL;
-        char           *expression = NULL;
         char           *in = NULL;
         char           *newline;
-        char            option;
-        int             invert = 0;
-        int             expr_flags = REG_ICASE;
+        struct options  opts;
 
         filter_t        filter = {
                 0,              /* min_length_flag */
@@ -92,61 +76,35 @@ main(int argc, char **argv)
         if ((cd = iconv_open("char", "UTF-8")) == (iconv_t) (-1))
                 warnx("could not open conversion descriptor");
 
-        /* parse command line switches */
-        while ((option = getopt_long(argc, argv, "hd:l:L:x:Evb:B:", longopts, NULL)) != -1)
-                switch (option) {
-                case 'd':
-                        if (optarg[strlen(optarg) - 1] == '/') {
-                                TRY_MALLOC(filename_buffer, strlen(optarg) * sizeof(char) + MAXLINE + 1);
-                                strncpy(filename_buffer, optarg, strlen(optarg) + 1);
-                                in = &filename_buffer[strlen(optarg)];
-                        } else {
-                                TRY_MALLOC(filename_buffer, strlen(optarg) * sizeof(char) + 1 + MAXLINE + 1);
-                                strncpy(filename_buffer, optarg, strlen(optarg));
-                                strncpy(&filename_buffer[strlen(optarg)], "/", 2);
-                                in = &filename_buffer[strlen(optarg) + 1];
-                        }
-                        break;
-                case 'l':
-                        filter.min_length_flag = 1;
-                        filter.min_length = parse_period(optarg);
-                        break;
-                case 'L':
-                        filter.max_length_flag = 1;
-                        filter.max_length = parse_period(optarg);
-                        break;
-                case 'x':
-                        expression = optarg;
-                        break;
-                case 'E':
-                        expr_flags |= REG_EXTENDED;
-                        break;
-                case 'b':
-                        filter.min_bitrate_flag = 1;
-                        filter.min_bitrate = strtol(optarg, (char **)NULL, 10) * 1000;
-                        break;
-                case 'B':
-                        filter.max_bitrate_flag = 1;
-                        filter.max_bitrate = strtol(optarg, (char **)NULL, 10) * 1000;
-                        break;
-                case 'v':
-                        invert = 1;
-                        break;
-                case 'h':
-                default:
-                        printf("oggfilter [-l|--min-length period] [-L|--max-length period]\n");
-                        printf("          [-b|--min-bitrate bitrate] [-B|--max-bitrate]\n");
-                        printf("          [-x|--expression expression] [-d|--directory directory]\n");
-                        printf("          [-E|--extended] [-v|--invert]\n\n");
-                        printf("oggfilter {-h|--help}\n");
-                        return 0;
-                }
-        filter.expression_flag = compile_regex(&filter.expression, expression, expr_flags);
+        parse_options(&opts, argc, argv);
 
-        if (filename_buffer == NULL) {
+        if (opts.pathprefix != NULL) {
+                if (opts.pathprefix[strlen(opts.pathprefix) - 1] == '/') {
+                        TRY_MALLOC(filename_buffer, strlen(opts.pathprefix) * sizeof(char) + MAXLINE + 1);
+                        strncpy(filename_buffer, opts.pathprefix, strlen(opts.pathprefix) + 1);
+                        in = &filename_buffer[strlen(opts.pathprefix)];
+                } else {
+                        TRY_MALLOC(filename_buffer,
+                                   strlen(opts.pathprefix) * sizeof(char) + 1 + MAXLINE + 1);
+                        strncpy(filename_buffer, opts.pathprefix, strlen(opts.pathprefix));
+                        strncpy(&filename_buffer[strlen(opts.pathprefix)], "/", 2);
+                        in = &filename_buffer[strlen(opts.pathprefix) + 1];
+                }
+        } else {
                 TRY_MALLOC(filename_buffer, MAXLINE + 1);
                 in = filename_buffer;
         }
+
+        filter.min_length_flag = (opts.min_length != -1);
+        filter.min_length = opts.min_length;
+        filter.max_length_flag = (opts.max_length != -1);
+        filter.max_length = opts.max_length;
+        filter.min_bitrate_flag = (opts.min_bitrate != -1);
+        filter.min_bitrate = opts.min_bitrate;
+        filter.max_bitrate_flag = (opts.max_bitrate != -1);
+        filter.max_bitrate = opts.max_bitrate;
+        filter.expression_flag = compile_regex(&filter.expression, opts.expression, REG_ICASE | REG_EXTENDED);
+
         /* main loop */
         while (fgets(in, MAXLINE, stdin) != NULL) {
                 if ((newline = strchr(in, '\n')) != NULL)
@@ -157,7 +115,7 @@ main(int argc, char **argv)
                 else
                         filename = filename_buffer;
 
-                if (check_file(filename, &filter) ^ invert)
+                if (check_file(filename, &filter) ^ opts.invert)
                         printf("%s\n", filename);
         }
 
@@ -189,39 +147,6 @@ check_file(char *filename, filter_t *filter)
         ov_clear(&ovf);
 
         return match;
-}
-
-double
-parse_period(char *option)
-{
-        static int      regex_compiled;
-        static regex_t  period_regexp;
-        char           *minutes = NULL;
-        char           *seconds;
-        double          parsed = 0;
-        size_t          nmatch = 4;
-        regmatch_t      pmatch[4];
-
-        if (!regex_compiled)
-                regex_compiled = compile_regex(&period_regexp, R_PERIOD, REG_EXTENDED);
-
-        if (regexec(&period_regexp, option, nmatch, pmatch, 0) == 0) {
-                if (pmatch[2].rm_so == -1)
-                        seconds = option;
-                else {
-                        minutes = option;
-                        option[pmatch[2].rm_so] = '\0';
-                        seconds = &option[pmatch[3].rm_so];
-                }
-
-                if (minutes != NULL)
-                        parsed = strtol(minutes, (char **)NULL, 10) * 60;
-                parsed += strtol(seconds, (char **)NULL, 10);
-        } else {
-                errx(1, "could not parse time format: '%s'", option);
-        }
-
-        return parsed;
 }
 
 int
@@ -305,7 +230,7 @@ convert(char *from, char *to, size_t tolen)
         char          **top;
         size_t          fromlen;
 
-        if (cd == (iconv_t)(-1))
+        if (cd == (iconv_t) (-1))
                 return 1;
 
         fromlen = strlen(from);
@@ -313,7 +238,7 @@ convert(char *from, char *to, size_t tolen)
         top = &to;
 
         while (fromlen > 0)
-                if (iconv(cd, (const char **)fromp, &fromlen, top, &tolen) == (size_t) (-1)){
+                if (iconv(cd, (const char **)fromp, &fromlen, top, &tolen) == (size_t) (-1)) {
                         warnx("could not convert: %s", from);
                         return 1;
                 }

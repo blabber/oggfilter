@@ -1,3 +1,4 @@
+
 oggfilter
 =========
 
@@ -12,7 +13,7 @@ Documentation
          oggfilter [-l | --min-length period] [-L | --max-length period]
                    [-b | --min-bitrate bitrate] [-B | --max-bitrate bitrate]
                    [-x | --expression regexp] [-d | --directory directory]
-                   [-E | --extended] [-v | --invert]
+                   [-v | --invert]
     
          oggfilter {-h | --help}
     
@@ -46,17 +47,14 @@ Documentation
     
          -x | --expression regexp
                      Matches every ogg/vorbis file containing at least one vorbis-
-                     comment matching the regular expression regexp.  The regular
-                     expression matching is always case-insensitive.
+                     comment matching the extended regular expression regexp.  The
+                     regular expression matching is always case-insensitive. See
+                     re_format(7) for a complete discussion of the extended regu-
+                     lar expression format.
     
          -d | --directory directory
                      Prepends every line read from standard input with directory
                      if the first character of the line is not a slash.
-    
-         -E | --extended
-                     Interpret regexp as an extended regular expression rather
-                     than basic regular expressions.  See re_format(7) for a com-
-                     plete discussion of regular expression formats.
     
          -v | --invert
                      Invert the result set - return all ogg/vorbis files not
