@@ -23,7 +23,7 @@
 static void     init_options(struct options *opts);
 static long     parse_long(char *option);
 static double   parse_period(char *period);
-static void     print_usage();
+static void     print_usage(void);
 
 void
 parse_options(struct options *opts, int argc, char *argv[])

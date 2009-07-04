@@ -1,16 +1,21 @@
 PROG=		oggfilter
 SRCS=		${PROG}.c options.c checks.c
+README=		README.markdown
 
-CLEANFILES=	*.[Bb][Aa][Kk] *.core ${MAN1}.txt
+CSTD?=		c89
+WARNS?=		6
+WFORMAT?=	1
+# NO_WERROR is needed as libvorbis.h defines some static variables not used
+# in this code. This leads to warnings and breaks the build if NO_WERROR is
+# unset.  But I prefer NO_WERROR to hiding the warning.
+NO_WERROR=	yes
 
-CFLAGS+=	-Wall --ansi --pedantic
 CFLAGS+=	-I/usr/local/include
 LDFLAGS+=	-L/usr/local/lib 
 LDADD+=		-lvorbisfile -liconv
 
+CLEANFILES=	*.[Bb][Aa][Kk] *.core ${MAN1}.txt
 CTAGS=		ctags
-
-README=		README.markdown
 
 COL=		/usr/bin/col
 FIND=		/usr/bin/find

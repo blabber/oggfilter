@@ -18,7 +18,7 @@
 #include "checks.h"
 
 struct oggfile {
-        const char     *path;
+        char     *path;
         OggVorbis_File  ovf;
 };
 
@@ -26,7 +26,7 @@ static int      check_bitrate(struct oggfile *of, struct context *ctx);
 static int      check_comments(struct oggfile *of, struct context *ctx);
 static int      check_time(struct oggfile *of, struct context *ctx);
 static int      oggfile_close(struct oggfile *of);
-static int      oggfile_open(struct oggfile *of, const char *path);
+static int      oggfile_open(struct oggfile *of, char *path);
 
 int
 check_file(char *path, struct context *ctx)
@@ -109,7 +109,7 @@ context_close(struct context *ctx)
 }
 
 static int
-oggfile_open(struct oggfile *of, const char *path)
+oggfile_open(struct oggfile *of, char *path)
 {
         assert(of != NULL);
         assert(path != NULL);
