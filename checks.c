@@ -67,8 +67,6 @@ struct context *
 context_open(struct conditions *cond)
 {
         struct context *ctx;
-        int             errcode;
-        char            errstr[128];
 
         assert(cond != NULL);
 
@@ -82,9 +80,11 @@ context_open(struct conditions *cond)
         if ((ctx->conv = iconv_open("", "UTF-8")) == (iconv_t) (-1))
                 err(EX_SOFTWARE, "could not open conversion descriptor");
         if (cond->expression != NULL) {
+                int             errcode;
                 if ((ctx->regex = malloc(sizeof(regex_t))) == NULL)
                         err(EX_SOFTWARE, "could not allocate regex");
                 if ((errcode = regcomp(ctx->regex, cond->expression, REG_ICASE | REG_EXTENDED)) != 0) {
+                        char            errstr[128];
                         regerror(errcode, ctx->regex, errstr, sizeof(errstr));
                         errx(EX_USAGE, "could not compile regex: %s", cond->expression);
                 }
@@ -191,10 +191,6 @@ check_comments(struct oggfile *of, struct context *ctx)
 {
         vorbis_comment *ovc;
         int             i;
-        char            conv_comment_buffer[256];
-        char           *comment, *conv_comment;
-        char          **from, **to;
-        size_t          fromlen, tolen;
 
         assert(of != NULL);
         assert(ctx != NULL);
@@ -207,6 +203,11 @@ check_comments(struct oggfile *of, struct context *ctx)
                 return (0);
         }
         for (i = 0; i < ovc->comments; i++) {
+                char            conv_comment_buffer[256];
+                char           *comment, *conv_comment;
+                char          **from, **to;
+                size_t          fromlen, tolen;
+
                 conv_comment = &conv_comment_buffer[0];
                 comment = ovc->user_comments[i];
                 from = &comment;

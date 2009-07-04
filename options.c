@@ -105,9 +105,6 @@ init_options(struct options *opts)
 static double
 parse_period(char *option)
 {
-        char           *minutes = NULL;
-        char           *seconds;
-        char            errstr[128];
         int             errcode;
         double          period = 0;
         regex_t         regex;
@@ -116,10 +113,13 @@ parse_period(char *option)
         assert(option != NULL);
 
         if ((errcode = regcomp(&regex, PERIOD_EXPRESSION, REG_EXTENDED)) != 0) {
+                char            errstr[128];
                 regerror(errcode, &regex, errstr, sizeof(errstr));
                 errx(EX_SOFTWARE, "could not compile regex: %s", PERIOD_EXPRESSION);
         }
         if (regexec(&regex, option, PERIOD_GROUPS, groups, 0) == 0) {
+                char           *minutes = NULL;
+                char           *seconds;
                 if (groups[2].rm_so == -1)
                         seconds = option;
                 else {
