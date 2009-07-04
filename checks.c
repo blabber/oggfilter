@@ -6,6 +6,7 @@
  *                                                              Tobias Rehbein
  */
 
+#include <assert.h>
 #include <err.h>
 #include <iconv.h>
 #include <regex.h>
@@ -33,6 +34,9 @@ check_file(char *path, struct context *ctx)
         struct oggfile  of;
         int             match;
 
+        assert(path != NULL);
+        assert(ctx != NULL);
+
         if (oggfile_open(&of, path) != 0) {
                 warn("could not open oggfile: %s", path);
                 return (0);
@@ -50,6 +54,8 @@ check_file(char *path, struct context *ctx)
 void
 init_conditions(struct conditions *cond)
 {
+        assert(cond != NULL);
+
         cond->min_length = -1;
         cond->max_length = -1;
         cond->min_bitrate = -1;
@@ -63,6 +69,8 @@ context_open(struct conditions *cond)
         struct context *ctx;
         int             errcode;
         char            errstr[128];
+
+        assert(cond != NULL);
 
         if ((ctx = malloc(sizeof(struct context))) == NULL)
                 err(EX_SOFTWARE, "could not allocate check context");
@@ -89,6 +97,8 @@ context_open(struct conditions *cond)
 void
 context_close(struct context *ctx)
 {
+        assert(ctx != NULL);
+
         if (iconv_close(ctx->conv) == -1)
                 warn("could not close conversion descriptor");
         if (ctx->regex != NULL) {
@@ -101,6 +111,9 @@ context_close(struct context *ctx)
 static int
 oggfile_open(struct oggfile *of, const char *path)
 {
+        assert(of != NULL);
+        assert(path != NULL);
+
         if (ov_fopen((char *)path, &of->ovf) != 0)
                 return (1);
         of->path = path;
@@ -111,6 +124,8 @@ oggfile_open(struct oggfile *of, const char *path)
 static int
 oggfile_close(struct oggfile *of)
 {
+        assert(of != NULL);
+
         of->path = NULL;
         if (ov_clear(&of->ovf) != 0)
                 return (1);
@@ -124,6 +139,9 @@ check_time(struct oggfile *of, struct context *ctx)
         double          time;
         double          min_length;
         double          max_length;
+
+        assert(of != NULL);
+        assert(ctx != NULL);
 
         if ((time = ov_time_total(&of->ovf, -1)) == OV_EINVAL) {
                 warnx("could not get total time: %s", of->path);
@@ -147,6 +165,9 @@ check_bitrate(struct oggfile *of, struct context *ctx)
         long            nominal;
         long            min_bitrate;
         long            max_bitrate;
+
+        assert(of != NULL);
+        assert(ctx != NULL);
 
         if ((ovi = ov_info(&of->ovf, -1)) == NULL) {
                 warnx("could not read vorbis info: %s", of->path);
@@ -174,6 +195,9 @@ check_comments(struct oggfile *of, struct context *ctx)
         char           *comment, *conv_comment;
         char          **from, **to;
         size_t          fromlen, tolen;
+
+        assert(of != NULL);
+        assert(ctx != NULL);
 
         if (ctx->regex == NULL)
                 return (1);

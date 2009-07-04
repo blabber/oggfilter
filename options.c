@@ -6,6 +6,7 @@
  *                                                              Tobias Rehbein
  */
 
+#include <assert.h>
 #include <err.h>
 #include <getopt.h>
 #include <limits.h>
@@ -38,6 +39,10 @@ parse_options(struct options *opts, int argc, char *argv[])
                 {"max-bitrate", required_argument, NULL, 'B'}
         };
         int             opt;
+
+        assert(opts != NULL);
+        assert(argc >= 0);
+        assert(argv != NULL);
 
         init_options(opts);
 
@@ -86,6 +91,8 @@ print_usage()
 static void
 init_options(struct options *opts)
 {
+        assert(opts != NULL);
+
         opts->min_length = -1;
         opts->max_length = -1;
         opts->min_bitrate = -1;
@@ -105,6 +112,8 @@ parse_period(char *option)
         double          period = 0;
         regex_t         regex;
         regmatch_t      groups[PERIOD_GROUPS];
+
+        assert(option != NULL);
 
         if ((errcode = regcomp(&regex, PERIOD_EXPRESSION, REG_EXTENDED)) != 0) {
                 regerror(errcode, &regex, errstr, sizeof(errstr));
@@ -134,6 +143,8 @@ parse_long(char *option)
 {
         long            parsed;
         char           *endptr;
+
+        assert(option != NULL);
 
         parsed = strtol(option, &endptr, 10);
         if (endptr[0] != '\0')
