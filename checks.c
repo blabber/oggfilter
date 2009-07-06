@@ -18,7 +18,7 @@
 #include "checks.h"
 
 struct oggfile {
-        char     *path;
+        char           *path;
         OggVorbis_File  ovf;
 };
 

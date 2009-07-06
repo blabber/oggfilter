@@ -6,6 +6,7 @@
  *                                                              Tobias Rehbein
  */
 
+#include <assert.h>
 #include <err.h>
 #include <iconv.h>
 #include <locale.h>
@@ -20,24 +21,78 @@
 
 #define MAXLINE         1024
 
-/* prototypes */
-int             main(int argc, char **argv);
+struct buffers {
+        char           *path;
+        char           *in;
+};
+
+void            free_buffers(struct buffers *buffs);
+struct buffers *get_buffers(struct options *opts);
 
 int
-main(int argc, char *argv[])
+main(int argc, char **argv)
 {
-        char           *path_buffer = NULL;
-        char           *path = NULL;
-        char           *in = NULL;
-        char           *newline;
         struct options  opts;
-        struct context *ctx;
         struct conditions cond;
+        struct context *ctx = NULL;
+        struct buffers *buffs = NULL;
 
         if (!setlocale(LC_ALL, ""))
                 warnx("could not set locale");
 
         parse_options(&opts, argc, argv);
+        if ((buffs = get_buffers(&opts)) == NULL)
+                err(EX_SOFTWARE, "could note obtain buffs");
+
+        /* set up context */
+        init_conditions(&cond);
+        cond.min_length = opts.min_length;
+        cond.max_length = opts.max_length;
+        cond.min_bitrate = opts.min_bitrate;
+        cond.max_bitrate = opts.max_bitrate;
+        cond.expression = opts.expression;
+        if ((ctx = context_open(&cond)) == NULL)
+                err(EX_SOFTWARE, "could not open context");
+
+        /* main loop */
+        while (fgets(buffs->in, MAXLINE, stdin) != NULL) {
+                int             check_result;
+                char           *path = NULL;
+                char           *newline;
+
+                if ((newline = strchr(buffs->in, '\n')) != NULL)
+                        newline[0] = '\0';
+
+                if (buffs->in[0] == '/')
+                        path = buffs->in;
+                else
+                        path = buffs->path;
+
+                check_result = check_file(path, ctx);
+                assert(check_result == 0 || check_result == 1);
+                assert(opts.invert == 0 || opts.invert == 1);
+                if (check_result ^ opts.invert)
+                        printf("%s\n", path);
+        }
+
+        /* free all resources */
+        if (buffs != NULL)
+                free_buffers(buffs);
+        if (ctx != NULL)
+                context_close(ctx);
+
+        return (0);
+}
+
+struct buffers *
+get_buffers(struct options *opts)
+{
+        struct buffers *buffs;
+
+        assert(opts != NULL);
+
+        if ((buffs = malloc(sizeof(*buffs))) == NULL)
+                return (NULL);
 
         /*
          * The strncpy(3) calls in this conditional construct copy one byte
@@ -47,55 +102,35 @@ main(int argc, char *argv[])
          * I tried to write this in a more compact way, but the resulting code
          * was not very readable, so I'll keep it this way.
          */
-        if (opts.pathprefix != NULL) {
-                if (opts.pathprefix[strlen(opts.pathprefix) - 1] == '/') {
-                        if ((path_buffer = malloc(strlen(opts.pathprefix) + MAXLINE)) == NULL)
+        if (opts->pathprefix != NULL) {
+                if (opts->pathprefix[strlen(opts->pathprefix) - 1] == '/') {
+                        if ((buffs->path = malloc(strlen(opts->pathprefix) + MAXLINE)) == NULL)
                                 err(EX_SOFTWARE, "could not allocate memory: path_buffer");
-                        strncpy(path_buffer, opts.pathprefix, strlen(opts.pathprefix) + 1);
-                        in = &path_buffer[strlen(opts.pathprefix)];
+                        strncpy(buffs->path, opts->pathprefix, strlen(opts->pathprefix) + 1);
+                        buffs->in = &buffs->path[strlen(opts->pathprefix)];
                 } else {
-                        if ((path_buffer = malloc(strlen(opts.pathprefix) + 1 + MAXLINE)) == NULL)
+                        if ((buffs->path = malloc(strlen(opts->pathprefix) + 1 + MAXLINE)) == NULL)
                                 err(EX_SOFTWARE, "could not allocate memory: path_buffer");
-                        strcpy(path_buffer, opts.pathprefix);
-                        strncpy(&path_buffer[strlen(opts.pathprefix)], "/", 2);
-                        in = &path_buffer[strlen(opts.pathprefix) + 1];
+                        strcpy(buffs->path, opts->pathprefix);
+                        strncpy(&buffs->path[strlen(opts->pathprefix)], "/", 2);
+                        buffs->in = &buffs->path[strlen(opts->pathprefix) + 1];
                 }
         } else {
-                if ((path_buffer = malloc(MAXLINE + 1)) == NULL)
+                if ((buffs->path = malloc(MAXLINE + 1)) == NULL)
                         err(EX_SOFTWARE, "could not allocate memory: path_buffer");
-                in = path_buffer;
+                buffs->in = buffs->path;
         }
 
-        /* set up context */
-        init_conditions(&cond);
-        cond.min_length = opts.min_length;
-        cond.max_length = opts.max_length;
-        cond.min_bitrate = opts.min_bitrate;
-        cond.max_bitrate = opts.max_bitrate;
-        cond.expression = opts.expression;
+        return (buffs);
+}
 
-        if ((ctx = context_open(&cond)) == NULL)
-                errx(EX_SOFTWARE, "could not open context");
+void
+free_buffers(struct buffers *buffs)
+{
+        assert(buffs != NULL);
 
-        /* main loop */
-        while (fgets(in, MAXLINE, stdin) != NULL) {
-                if ((newline = strchr(in, '\n')) != NULL)
-                        newline[0] = '\0';
-
-                if (in[0] == '/')
-                        path = in;
-                else
-                        path = path_buffer;
-
-                if (check_file(path, ctx) ^ opts.invert)
-                        printf("%s\n", path);
-        }
-
-        /* free all resources */
-        if (path != NULL)
-                free(path);
-        if (ctx != NULL)
-                context_close(ctx);
-
-        return 0;
+        if (buffs->path != NULL)
+                free(buffs->path);
+        buffs->path = NULL;
+        buffs->in = NULL;
 }
