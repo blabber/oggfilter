@@ -27,31 +27,28 @@ struct buffers {
 };
 
 void            free_buffers(struct buffers *buffs);
+void            free_conditions(struct conditions *cond);
 struct buffers *get_buffers(struct options *opts);
+struct conditions *get_conditions(struct options *opts);
 
 int
 main(int argc, char **argv)
 {
         struct options  opts;
-        struct conditions cond;
+        struct conditions *cond = NULL;
         struct context *ctx = NULL;
         struct buffers *buffs = NULL;
 
         if (!setlocale(LC_ALL, ""))
                 warnx("could not set locale");
 
+        /* setup environment */
         parse_options(&opts, argc, argv);
         if ((buffs = get_buffers(&opts)) == NULL)
                 err(EX_SOFTWARE, "could note obtain buffs");
-
-        /* set up context */
-        init_conditions(&cond);
-        cond.min_length = opts.min_length;
-        cond.max_length = opts.max_length;
-        cond.min_bitrate = opts.min_bitrate;
-        cond.max_bitrate = opts.max_bitrate;
-        cond.expression = opts.expression;
-        if ((ctx = context_open(&cond)) == NULL)
+        if ((cond = get_conditions(&opts)) == NULL)
+                err(EX_SOFTWARE, "could note obtain conditions");
+        if ((ctx = context_open(cond)) == NULL)
                 err(EX_SOFTWARE, "could not open context");
 
         /* main loop */
@@ -78,6 +75,8 @@ main(int argc, char **argv)
         /* free all resources */
         if (buffs != NULL)
                 free_buffers(buffs);
+        if (cond != NULL)
+                free_conditions(cond);
         if (ctx != NULL)
                 context_close(ctx);
 
@@ -133,4 +132,33 @@ free_buffers(struct buffers *buffs)
                 free(buffs->path);
         buffs->path = NULL;
         buffs->in = NULL;
+}
+
+struct conditions *
+get_conditions(struct options *opts)
+{
+        struct conditions *cond;
+
+        assert(opts != NULL);
+
+        if ((cond = malloc(sizeof(*cond))) == NULL)
+                return (NULL);
+
+        init_conditions(cond);
+
+        cond->min_length = opts->min_length;
+        cond->max_length = opts->max_length;
+        cond->min_bitrate = opts->min_bitrate;
+        cond->max_bitrate = opts->max_bitrate;
+        cond->expression = opts->expression;
+
+        return cond;
+}
+
+void
+free_conditions(struct conditions *cond)
+{
+        assert(cond != NULL);
+
+        free(cond);
 }
