@@ -70,7 +70,7 @@ context_open(struct conditions *cond)
 
         assert(cond != NULL);
 
-        if ((ctx = malloc(sizeof(struct context))) == NULL)
+        if ((ctx = malloc(sizeof(*ctx))) == NULL)
                 err(EX_SOFTWARE, "could not allocate check context");
 
         ctx->cond = NULL;
