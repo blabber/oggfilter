@@ -24,7 +24,7 @@ M4=		/usr/bin/m4
 SED=		/usr/bin/sed
 XARGS=		/usr/bin/xargs
 
-all:		${README}
+all:		${README} indent
 
 .include <bsd.prog.mk>
 
