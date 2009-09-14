@@ -71,6 +71,8 @@ main(int argc, char **argv)
                 if (check_result ^ opts.invert)
                         printf("%s\n", path);
         }
+        if (ferror(stdin))
+                err(EX_SOFTWARE, "could not completely read stdin");
 
         /* free all resources */
         if (buffs != NULL)
