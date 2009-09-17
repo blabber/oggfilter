@@ -19,7 +19,9 @@
 #include "checks.h"
 #include "options.h"
 
-#define MAXLINE         1024
+enum {
+        MAXLINE = 1024
+};
 
 struct buffers {
         char           *path;

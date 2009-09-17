@@ -17,8 +17,10 @@
 
 #include "options.h"
 
-#define PERIOD_EXPRESSION       "^([[:digit:]]{1,})(:([0-5][[:digit:]]))?$"
-#define PERIOD_GROUPS           4
+static const char *PERIOD_EXPRESSION = "^([[:digit:]]{1,})(:([0-5][[:digit:]]))?$";
+enum {
+        PERIOD_GROUPS = 4
+};
 
 static void     init_options(struct options *opts);
 static long     parse_long(char *option);
