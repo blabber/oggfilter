@@ -25,6 +25,7 @@
 .Op Fl B | Fl -max-bitrate Ar bitrate
 .Op Fl x | Fl -expression Ar regexp
 .Op Fl d | Fl -directory Ar directory
+.Op Fl P | Fl -processes Ar count
 .Op Fl v | Fl -invert
 .Pp
 .Nm
@@ -82,6 +83,18 @@ if the first character of the line is not a slash.
 .It Fl v | Fl -invert
 Invert the result set - return all ogg/vorbis files not matching the specified
 criteria.
+.
+.It Fl P | Fl -processes Ar count
+Instructs
+.Nm
+to spawn 
+.Ar count
+worker processes. This may speed up the processing on multi processor machines. A good choice is to
+set 
+.Ar count
+equal to the amount of processor cores available. By default 
+.Nm
+runs as a single process.
 .
 .It Fl h | Fl -help
 Print the synopsis of 

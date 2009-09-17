@@ -14,6 +14,7 @@ struct options {
         char           *expression;
         char           *pathprefix;
         int             invert;
+        int             processes;
 };
 
 void            parse_options(struct options *_opts, int _argc, char *_argv[]);

@@ -11,10 +11,14 @@
 #include <iconv.h>
 #include <locale.h>
 #include <regex.h>
+#include <signal.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <sysexits.h>
+#include <unistd.h>
+#include <sys/types.h>
+#include <sys/wait.h>
 
 #include "checks.h"
 #include "options.h"
@@ -28,10 +32,15 @@ struct buffers {
         char           *in;
 };
 
+void            fork_you(struct options *opts, struct context *ctx, struct buffers *buffs);
 void            free_buffers(struct buffers *buffs);
 void            free_conditions(struct conditions *cond);
 struct buffers *get_buffers(struct options *opts);
 struct conditions *get_conditions(struct options *opts);
+void            process_loop(struct options *opts, struct context *ctx, struct buffers *buffs);
+int             use_pipe(int *p);
+int             set_sigchld_handler(void);
+void            sigchld_handler(int);
 
 int
 main(int argc, char **argv)
@@ -53,28 +62,11 @@ main(int argc, char **argv)
         if ((ctx = context_open(cond)) == NULL)
                 err(EX_SOFTWARE, "could not open context");
 
-        /* main loop */
-        while (fgets(buffs->in, MAXLINE, stdin) != NULL) {
-                int             check_result;
-                char           *path = NULL;
-                char           *newline;
-
-                if ((newline = strchr(buffs->in, '\n')) != NULL)
-                        newline[0] = '\0';
-
-                if (buffs->in[0] == '/')
-                        path = buffs->in;
-                else
-                        path = buffs->path;
-
-                check_result = check_file(path, ctx);
-                assert(check_result == 0 || check_result == 1);
-                assert(opts.invert == 0 || opts.invert == 1);
-                if (check_result ^ opts.invert)
-                        printf("%s\n", path);
-        }
-        if (ferror(stdin))
-                err(EX_SOFTWARE, "could not completely read stdin");
+        /* enter main loop or fork away */
+        if (opts.processes <= 1)
+                process_loop(&opts, ctx, buffs);
+        else
+                fork_you(&opts, ctx, buffs);
 
         /* free all resources */
         if (buffs != NULL)
@@ -166,4 +158,133 @@ free_conditions(struct conditions *cond)
         assert(cond != NULL);
 
         free(cond);
+}
+
+void
+process_loop(struct options *opts, struct context *ctx, struct buffers *buffs)
+{
+        assert(opts != NULL);
+        assert(ctx != NULL);
+        assert(buffs != NULL);
+
+        while (fgets(buffs->in, MAXLINE, stdin) != NULL) {
+                int             check_result;
+                char           *path = NULL;
+                char           *newline;
+
+                if ((newline = strchr(buffs->in, '\n')) != NULL)
+                        newline[0] = '\0';
+
+                if (buffs->in[0] == '/')
+                        path = buffs->in;
+                else
+                        path = buffs->path;
+
+                check_result = check_file(path, ctx);
+                assert(check_result == 0 || check_result == 1);
+                assert(opts->invert == 0 || opts->invert == 1);
+                if (check_result ^ opts->invert)
+                        printf("%s\n", path);
+        }
+        if (ferror(stdin))
+                err(EX_SOFTWARE, "could not completely read stdin");
+}
+
+void
+fork_you(struct options *opts, struct context *ctx, struct buffers *buffs)
+{
+        int            *fds;
+        int             i;
+
+        assert(opts != NULL);
+        assert(ctx != NULL);
+        assert(buffs != NULL);
+
+        if (set_sigchld_handler() == -1)
+                warn("could not set sigchld handler");
+
+        if ((fds = malloc(opts->processes * sizeof(int))) == NULL)
+                err(EX_SOFTWARE, "could not malloc file descriptors");
+
+        for (i = 0; i < opts->processes; i++) {
+                int             p[2];
+                pid_t           pid;
+
+                if (pipe(p) == -1)
+                        err(EX_OSERR, "could not create pipe (%d)", i);
+                fds[i] = p[1];
+
+                switch (pid = fork()) {
+                case -1:
+                        err(EX_OSERR, "could not fork (%d)", i);
+                        break;
+                case 0:
+                        continue;
+                        break;
+                default:
+                        if (use_pipe(p) == -1)
+                                err(EX_OSERR, "could not setup IPC");
+                        process_loop(opts, ctx, buffs);
+                        goto out;
+                }
+        }
+
+        i = 0;
+        while (fgets(buffs->in, MAXLINE, stdin) != NULL) {
+                if (write(fds[i++ % 2], buffs->in, strlen(buffs->in)) == -1)
+                        warn("could not write to subprocess");
+        }
+        if (ferror(stdin))
+                err(EX_SOFTWARE, "could not completely read stdin");
+out:
+        free(fds);
+}
+
+int
+use_pipe(int *p)
+{
+        assert(p != NULL);
+
+        if (close(p[1]) == -1)
+                return (-1);
+        if (fclose(stdin) == EOF)
+                return (-1);
+        if ((dup2(p[0], STDIN_FILENO)) == -1)
+                return (-1);
+        if ((stdin = fdopen(STDIN_FILENO, "r")) == NULL)
+                return (-1);
+
+        return (0);
+}
+
+int
+set_sigchld_handler(void)
+{
+        struct sigaction sa;
+
+        sa.sa_handler = &sigchld_handler;
+        sa.sa_flags = SA_NOCLDSTOP;
+        if (sigemptyset(&(sa.sa_mask)) == -1)
+                return (-1);
+
+        if (sigaction(SIGCHLD, &sa, NULL) == -1)
+                return (-1);
+
+        return (0);
+}
+
+void
+sigchld_handler(int sig)
+{
+        pid_t           pid;
+        int             sts;
+
+        assert(sig == SIGCHLD);
+
+        if ((pid = wait(&sts)) == -1) {
+                warn("could not get child status");
+                return;
+        }
+        if (WIFEXITED(sts) && WEXITSTATUS(sts) != 0)
+                warn("child %d exited abnormally: %d", pid, sts);
 }

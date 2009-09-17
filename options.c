@@ -38,7 +38,8 @@ parse_options(struct options *opts, int argc, char *argv[])
                 {"invert", no_argument, NULL, 'v'},
                 {"help", no_argument, NULL, 'h'},
                 {"min-bitrate", required_argument, NULL, 'b'},
-                {"max-bitrate", required_argument, NULL, 'B'}
+                {"max-bitrate", required_argument, NULL, 'B'},
+                {"processes", required_argument, NULL, 'P'}
         };
         int             opt;
 
@@ -48,7 +49,7 @@ parse_options(struct options *opts, int argc, char *argv[])
 
         init_options(opts);
 
-        while ((opt = getopt_long(argc, argv, "hd:l:L:x:vb:B:", longopts, NULL)) != -1)
+        while ((opt = getopt_long(argc, argv, "hd:l:L:x:vb:B:P:", longopts, NULL)) != -1)
                 switch (opt) {
                 case 'd':
                         opts->pathprefix = optarg;
@@ -68,6 +69,9 @@ parse_options(struct options *opts, int argc, char *argv[])
                 case 'B':
                         opts->max_bitrate = parse_long(optarg) * 1000;
                         break;
+                case 'P':
+                        opts->processes = (int)parse_long(optarg);
+                        break;
                 case 'v':
                         opts->invert = 1;
                         break;
@@ -86,7 +90,7 @@ print_usage()
         printf("oggfilter [-l|--min-length period] [-L|--max-length period]\n");
         printf("          [-b|--min-bitrate bitrate] [-B|--max-bitrate]\n");
         printf("          [-x|--expression expression] [-d|--directory directory]\n");
-        printf("          [-v|--invert]\n\n");
+        printf("          [-P|--processes count] [-v|--invert]\n\n");
         printf("oggfilter {-h|--help}\n");
 }
 
@@ -102,6 +106,7 @@ init_options(struct options *opts)
         opts->expression = NULL;
         opts->pathprefix = NULL;
         opts->invert = 0;
+        opts->processes = 1;
 }
 
 static double

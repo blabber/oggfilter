@@ -13,7 +13,7 @@ Documentation
          oggfilter [-l | --min-length period] [-L | --max-length period]
                    [-b | --min-bitrate bitrate] [-B | --max-bitrate bitrate]
                    [-x | --expression regexp] [-d | --directory directory]
-                   [-v | --invert]
+                   [-P | --processes count] [-v | --invert]
     
          oggfilter {-h | --help}
     
@@ -59,6 +59,12 @@ Documentation
          -v | --invert
                      Invert the result set - return all ogg/vorbis files not
                      matching the specified criteria.
+    
+         -P | --processes count
+                     Instructs oggfilter to spawn count worker processes. This may
+                     speed up the processing on multi processor machines. A good
+                     choice is to set count equal to the amount of processor cores
+                     available. By default oggfilter runs as a single process.
     
          -h | --help
                      Print the synopsis of oggfilter and exit. This overrides any
