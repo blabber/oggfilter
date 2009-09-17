@@ -88,6 +88,7 @@ main(int argc, char **argv)
 struct buffers *
 get_buffers(struct options *opts)
 {
+        const char     *errstr = "could not allocate memory: buffs->path";
         struct buffers *buffs;
 
         assert(opts != NULL);
@@ -106,19 +107,19 @@ get_buffers(struct options *opts)
         if (opts->pathprefix != NULL) {
                 if (opts->pathprefix[strlen(opts->pathprefix) - 1] == '/') {
                         if ((buffs->path = malloc(strlen(opts->pathprefix) + MAXLINE)) == NULL)
-                                err(EX_SOFTWARE, "could not allocate memory: path_buffer");
+                                err(EX_SOFTWARE, "%s", errstr);
                         strncpy(buffs->path, opts->pathprefix, strlen(opts->pathprefix) + 1);
                         buffs->in = &buffs->path[strlen(opts->pathprefix)];
                 } else {
                         if ((buffs->path = malloc(strlen(opts->pathprefix) + 1 + MAXLINE)) == NULL)
-                                err(EX_SOFTWARE, "could not allocate memory: path_buffer");
+                                err(EX_SOFTWARE, "%s", errstr);
                         strcpy(buffs->path, opts->pathprefix);
                         strncpy(&buffs->path[strlen(opts->pathprefix)], "/", 2);
                         buffs->in = &buffs->path[strlen(opts->pathprefix) + 1];
                 }
         } else {
                 if ((buffs->path = malloc(MAXLINE + 1)) == NULL)
-                        err(EX_SOFTWARE, "could not allocate memory: path_buffer");
+                        err(EX_SOFTWARE, "%s", errstr);
                 buffs->in = buffs->path;
         }
 
