@@ -11,7 +11,7 @@ Portability issues
 ------------------
 This program was written in ANSI/C so it should compile on every unix-like
 platform supporting an ANSI/C compiler and libvorbis. But this was written on a
-FreeBSD system an has not been tested on other platforms. 
+FreeBSD system and has not been tested on other platforms. 
 
 The supplied Makefile is a BSD-style Makefile and uses the FreeBSD-make
 infrastructure. This is not portable, but as oggfilter is pretty simple there
