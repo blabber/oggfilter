@@ -212,14 +212,13 @@ fork_you(struct options *opts, struct context *ctx, struct buffers *buffs)
 
                 if (pipe(p) == -1)
                         err(EX_OSERR, "could not create pipe (%d)", i);
-                fds[i] = p[1];
 
                 switch (pid = fork()) {
                 case -1:
                         err(EX_OSERR, "could not fork (%d)", i);
                         break;
                 case 0:
-                        continue;
+                        fds[i] = p[1];
                         break;
                 default:
                         if (use_pipe(p) == -1)
@@ -230,12 +229,15 @@ fork_you(struct options *opts, struct context *ctx, struct buffers *buffs)
         }
 
         i = 0;
-        while (fgets(buffs->in, MAXLINE, stdin) != NULL) {
-                if (write(fds[i++ % 2], buffs->in, strlen(buffs->in)) == -1)
+        while (fgets(buffs->in, MAXLINE, stdin) != NULL)
+                if (write(fds[i++ % opts->processes], buffs->in, strlen(buffs->in)) == -1)
                         warn("could not write to subprocess");
-        }
         if (ferror(stdin))
                 err(EX_SOFTWARE, "could not completely read stdin");
+
+        for (i = 0; i < opts->processes; i++)
+                if (close(fds[i]) == -1)
+                        warn("could not close fd: %d", i);
 out:
         free(fds);
 }
