@@ -6,15 +6,22 @@
  *                                                              Tobias Rehbein
  */
 
+/**
+ * Required includes:
+ *
+ * list.h
+ */
+
 struct options {
         double          min_length;
         double          max_length;
         long            min_bitrate;
         long            max_bitrate;
-        char           *expression;
+        struct element *expressionlist;
         char           *pathprefix;
         int             invert;
         int             processes;
 };
 
-void            parse_options(struct options *_opts, int _argc, char *_argv[]);
+struct options *get_options(int _argc, char *_argv[]);
+int             free_options(struct options *opts);

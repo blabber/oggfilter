@@ -16,6 +16,7 @@
 #include <sysexits.h>
 
 #include "options.h"
+#include "list.h"
 
 static const char *PERIOD_EXPRESSION = "^([[:digit:]]{1,})(:([0-5][[:digit:]]))?$";
 enum {
@@ -25,10 +26,11 @@ enum {
 static void     init_options(struct options *opts);
 static long     parse_long(char *option);
 static double   parse_period(char *period);
+static int      prepend_expression(struct options *opts, char *expression);
 static void     print_usage(void);
 
-void
-parse_options(struct options *opts, int argc, char *argv[])
+struct options *
+get_options(int argc, char *argv[])
 {
         struct option   longopts[] = {
                 {"directory", required_argument, NULL, 'd'},
@@ -41,11 +43,14 @@ parse_options(struct options *opts, int argc, char *argv[])
                 {"max-bitrate", required_argument, NULL, 'B'},
                 {"processes", required_argument, NULL, 'P'}
         };
+        struct options *opts;
         int             opt;
 
-        assert(opts != NULL);
         assert(argc >= 0);
         assert(argv != NULL);
+
+        if ((opts = malloc(sizeof(struct options))) == NULL)
+                err(EX_SOFTWARE, "could not malloc options struct");
 
         init_options(opts);
 
@@ -61,7 +66,7 @@ parse_options(struct options *opts, int argc, char *argv[])
                         opts->max_length = parse_period(optarg);
                         break;
                 case 'x':
-                        opts->expression = optarg;
+                        prepend_expression(opts, optarg);
                         break;
                 case 'b':
                         opts->min_bitrate = parse_long(optarg) * 1000;
@@ -82,6 +87,22 @@ parse_options(struct options *opts, int argc, char *argv[])
                         print_usage();
                         exit(EX_OK);
                 }
+
+        return (opts);
+}
+
+int
+free_options(struct options *opts)
+{
+        struct element *e;
+
+        assert(opts != NULL);
+
+        e = opts->expressionlist;
+        while (e != NULL)
+                e = destroy_element(e);
+
+        return (0);
 }
 
 static void
@@ -103,7 +124,7 @@ init_options(struct options *opts)
         opts->max_length = -1;
         opts->min_bitrate = -1;
         opts->max_bitrate = -1;
-        opts->expression = NULL;
+        opts->expressionlist = NULL;
         opts->pathprefix = NULL;
         opts->invert = 0;
         opts->processes = 1;
@@ -114,7 +135,7 @@ parse_period(char *option)
 {
         int             errcode;
         double          period = 0;
-        regex_t         regex;
+        regex_t regex;
         regmatch_t      groups[PERIOD_GROUPS];
 
         assert(option != NULL);
@@ -124,7 +145,7 @@ parse_period(char *option)
                 regerror(errcode, &regex, errstr, sizeof(errstr));
                 errx(EX_SOFTWARE, "could not compile regex: %s", PERIOD_EXPRESSION);
         }
-        if (regexec(&regex, option, PERIOD_GROUPS, groups, 0) == 0) {
+        if (regexec(&regex, option, PERIOD_GROUPS, groups, 0)== 0) {
                 char           *minutes = NULL;
                 char           *seconds;
                 if (groups[2].rm_so == -1)
@@ -158,4 +179,19 @@ parse_long(char *option)
                 errx(EX_USAGE, "could not parse numeric value: %s", option);
 
         return parsed;
+}
+
+static int
+prepend_expression(struct options *opts, char *expression)
+{
+        struct element *e;
+
+        assert(opts != NULL);
+        assert(expression != NULL);
+
+        if ((e = create_element(expression)) == NULL)
+                err(EX_SOFTWARE, "could not create expression element");
+        opts->expressionlist = prepend_element(e, opts->expressionlist);
+
+        return (0);
 }

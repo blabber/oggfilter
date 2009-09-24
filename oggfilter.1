@@ -73,7 +73,8 @@ the extended regular expression
 .Ar regexp .
 The regular expression matching is always case-insensitive. See 
 .Xr re_format 7
-for a complete discussion of the extended regular expression format.
+for a complete discussion of the extended regular expression format. This option
+may be specified multiple times.
 .
 .It Fl d | Fl -directory Ar directory
 Prepends every line read from standard input with 
@@ -129,6 +130,14 @@ or
 you may use:
 .Pp
 .Dl oggfilter -v -E -x '^genre=(neo folk|power metal)$' < playlist.m3u
+.Pp
+To get a list of all your ogg/vorbis files tagged with genre 
+.Dq Thrash Metal
+and containing
+.Dq death
+in it's title use the following command line:
+.Pp
+.Dl oggfilter -x '^genre=thrash metal$' -x '^title=.*death.*' < playlist.m3u
 .Pp
 To get a list of all ogg/vorbis files with a maximum playtime of 5 minutes and
 a minimum playtime of 3 minutes you may use:

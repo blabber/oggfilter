@@ -3,3 +3,6 @@
 -Toptions
 -Tconditions
 -Tcontext
+-Telement
+-Tregex
+-Toggfile

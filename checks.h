@@ -11,6 +11,7 @@
  *
  * iconv.h
  * regex.h
+ * list.h
  */
 
 /*
@@ -21,7 +22,7 @@ struct conditions {
         double          max_length;
         long            min_bitrate;
         long            max_bitrate;
-        char           *expression;
+        struct element *regexlist;
 };
 
 struct context;

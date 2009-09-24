@@ -21,6 +21,7 @@
 #include <sys/wait.h>
 
 #include "checks.h"
+#include "list.h"
 #include "options.h"
 
 enum {
@@ -45,7 +46,7 @@ void            sigchld_handler(int);
 int
 main(int argc, char **argv)
 {
-        struct options  opts;
+        struct options *opts = NULL;
         struct conditions *cond = NULL;
         struct context *ctx = NULL;
         struct buffers *buffs = NULL;
@@ -54,24 +55,26 @@ main(int argc, char **argv)
                 warnx("could not set locale");
 
         /* setup environment */
-        parse_options(&opts, argc, argv);
-        if ((buffs = get_buffers(&opts)) == NULL)
+        if ((opts = get_options(argc, argv)) == NULL)
+                err(EX_SOFTWARE, "could not obtain options");
+        if ((buffs = get_buffers(opts)) == NULL)
                 err(EX_SOFTWARE, "could note obtain buffs");
-        if ((cond = get_conditions(&opts)) == NULL)
+        if ((cond = get_conditions(opts)) == NULL)
                 err(EX_SOFTWARE, "could note obtain conditions");
         if ((ctx = context_open(cond)) == NULL)
                 err(EX_SOFTWARE, "could not open context");
 
         /* enter main loop or fork away */
-        if (opts.processes <= 1)
-                process_loop(&opts, ctx, buffs);
+        if (opts->processes <= 1)
+                process_loop(opts, ctx, buffs);
         else
-                fork_you(&opts, ctx, buffs);
+                fork_you(opts, ctx, buffs);
 
         /* free all resources */
         free_buffers(buffs);
         free_conditions(cond);
         context_close(ctx);
+        free_options(opts);
 
         return (0);
 }
@@ -132,6 +135,7 @@ struct conditions *
 get_conditions(struct options *opts)
 {
         struct conditions *cond;
+        struct element *oe;
 
         assert(opts != NULL);
 
@@ -144,7 +148,15 @@ get_conditions(struct options *opts)
         cond->max_length = opts->max_length;
         cond->min_bitrate = opts->min_bitrate;
         cond->max_bitrate = opts->max_bitrate;
-        cond->expression = opts->expression;
+
+        for (oe = opts->expressionlist; oe != NULL; oe = oe->next) {
+                struct element *ce;
+
+                if ((ce = create_element(oe->payload)) == NULL)
+                        err(EX_SOFTWARE, "could not create regex element");
+
+                cond->regexlist = prepend_element(ce, cond->regexlist);
+        }
 
         return cond;
 }
@@ -152,7 +164,13 @@ get_conditions(struct options *opts)
 void
 free_conditions(struct conditions *cond)
 {
+        struct element *e;
+
         assert(cond != NULL);
+
+        e = cond->regexlist;
+        while (e != NULL)
+                e = destroy_element(e);
 
         free(cond);
 }

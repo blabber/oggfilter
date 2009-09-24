@@ -1,5 +1,5 @@
 PROG=		oggfilter
-SRCS=		${PROG}.c options.c checks.c
+SRCS=		${PROG}.c options.c checks.c list.c
 README=		README.markdown
 
 CSTD?=		c89

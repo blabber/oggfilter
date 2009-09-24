@@ -16,16 +16,22 @@
 #include <vorbis/vorbisfile.h>
 
 #include "checks.h"
+#include "list.h"
 
 struct context {
         struct conditions *cond;
+        struct element *regexlist;
         iconv_t         conv;
-        regex_t        *regex;
 };
 
 struct oggfile {
         char           *path;
         OggVorbis_File  ovf;
+};
+
+struct regex {
+        char           *pattern;
+        regex_t        *regex;
 };
 
 static int      check_bitrate(struct oggfile *of, struct context *ctx);
@@ -66,13 +72,14 @@ init_conditions(struct conditions *cond)
         cond->max_length = -1;
         cond->min_bitrate = -1;
         cond->max_bitrate = -1;
-        cond->expression = NULL;
+        cond->regexlist = NULL;
 }
 
 struct context *
 context_open(struct conditions *cond)
 {
         struct context *ctx;
+        struct element *e;
 
         assert(cond != NULL);
 
@@ -81,20 +88,34 @@ context_open(struct conditions *cond)
 
         ctx->cond = NULL;
         ctx->conv = (iconv_t) (-1);
-        ctx->regex = NULL;
 
         if ((ctx->conv = iconv_open("", "UTF-8")) == (iconv_t) (-1))
                 err(EX_SOFTWARE, "could not open conversion descriptor");
-        if (cond->expression != NULL) {
+
+        for (e = cond->regexlist; e != NULL; e = e->next) {
+                struct regex   *re;
+                struct element *ne;
                 int             errcode;
-                if ((ctx->regex = malloc(sizeof(regex_t))) == NULL)
-                        err(EX_SOFTWARE, "could not allocate regex");
-                if ((errcode = regcomp(ctx->regex, cond->expression, REG_ICASE | REG_EXTENDED)) != 0) {
+
+                if ((re = malloc(sizeof(*re))) == NULL)
+                        err(EX_SOFTWARE, "could not allocate regex structure");
+
+                re->pattern = e->payload;
+                if ((re->regex = malloc(sizeof(*(re->regex))))== NULL)
+                        err(EX_SOFTWARE, "could not allocate regex struct");
+
+                if ((errcode = regcomp(re->regex, re->pattern, REG_ICASE | REG_EXTENDED)) != 0) {
                         char            errstr[128];
-                        regerror(errcode, ctx->regex, errstr, sizeof(errstr));
-                        errx(EX_USAGE, "could not compile regex: %s", cond->expression);
+
+                        regerror(errcode, re->regex, errstr, sizeof(errstr));
+                        errx(EX_USAGE, "could not compile regex: %s", re->pattern);
                 }
+                if ((ne = create_element(re)) == NULL)
+                        err(EX_SOFTWARE, "could not allocate regex element");
+
+                ctx->regexlist = prepend_element(ne, ctx->regexlist);
         }
+
         ctx->cond = cond;
 
         return ctx;
@@ -107,10 +128,16 @@ context_close(struct context *ctx)
 
         if (iconv_close(ctx->conv) == -1)
                 warn("could not close conversion descriptor");
-        if (ctx->regex != NULL) {
-                regfree(ctx->regex);
-                free(ctx->regex);
+
+        while (ctx->regexlist != NULL) {
+                struct regex   *r;
+
+                r = ctx->regexlist->payload;
+                regfree(r->regex);
+                free(r->regex);
+                ctx->regexlist = destroy_element(ctx->regexlist);
         }
+
         free(ctx);
 }
 
@@ -196,41 +223,50 @@ static int
 check_comments(struct oggfile *of, struct context *ctx)
 {
         vorbis_comment *ovc;
-        int             i;
+        struct element *e;
 
         assert(of != NULL);
         assert(ctx != NULL);
-
-        if (ctx->regex == NULL)
-                return (1);
 
         if ((ovc = ov_comment(&of->ovf, -1)) == NULL) {
                 warnx("could not read vorbiscomments: %s", of->path);
                 return (0);
         }
-        for (i = 0; i < ovc->comments; i++) {
-                char            conv_comment_buffer[256];
-                char           *comment, *conv_comment;
-                char          **from, **to;
-                size_t          fromlen, tolen;
+        for (e = ctx->regexlist; e != NULL; e = e->next) {
+                int             i;
+                int             match = 0;
 
-                conv_comment = &conv_comment_buffer[0];
-                comment = ovc->user_comments[i];
-                from = &comment;
-                to = &conv_comment;
-                fromlen = strlen(comment);
-                tolen = sizeof(conv_comment_buffer);
+                for (i = 0; i < ovc->comments; i++) {
+                        struct regex   *re;
+                        char            conv_comment_buffer[256];
+                        char           *comment, *conv_comment;
+                        char          **from, **to;
+                        size_t          fromlen, tolen;
 
-                while (fromlen > 0)
-                        if (iconv(ctx->conv, (const char **)from, &fromlen, to, &tolen) == (size_t) (-1)) {
-                                warnx("could not convert: %s", ovc->user_comments[i]);
-                                return (0);
-                        }
-                *to[0] = '\0';
+                        conv_comment = &conv_comment_buffer[0];
+                        comment = ovc->user_comments[i];
+                        from = &comment;
+                        to = &conv_comment;
+                        fromlen = strlen(comment);
+                        tolen = sizeof(conv_comment_buffer);
 
-                if (regexec(ctx->regex, conv_comment_buffer, 0, NULL, 0) == 0)
-                        return (1);
+                        while (fromlen > 0)
+                                if (iconv(ctx->conv, (const char **)from, &fromlen, to, &tolen) == (size_t) (-1)) {
+                                        warnx("could not convert: %s", ovc->user_comments[i]);
+                                        return (0);
+                                }
+                        *to[0] = '\0';
+
+                        re = e->payload;
+                        if (regexec(re->regex, conv_comment_buffer, 0, NULL, 0)== 0)
+                                match = 1;
+
+
+                }
+
+                if (!match)
+                        return (0);
         }
 
-        return (0);
+        return (1);
 }

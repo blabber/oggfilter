@@ -50,7 +50,8 @@ Documentation
                      comment matching the extended regular expression regexp.  The
                      regular expression matching is always case-insensitive. See
                      re_format(7) for a complete discussion of the extended regu-
-                     lar expression format.
+                     lar expression format. This option may be specified multiple
+                     times.
     
          -d | --directory directory
                      Prepends every line read from standard input with directory
@@ -85,6 +86,13 @@ Documentation
          or `Power Metal' you may use:
     
                oggfilter -v -E -x '^genre=(neo folk|power metal)$' < playlist.m3u
+    
+         To get a list of all your ogg/vorbis files tagged with genre `Thrash
+         Metal' and containing `death' in it's title use the following command
+         line:
+    
+               oggfilter -x '^genre=thrash metal$' -x '^title=.*death.*' <
+               playlist.m3u
     
          To get a list of all ogg/vorbis files with a maximum playtime of 5 min-
          utes and a minimum playtime of 3 minutes you may use:
