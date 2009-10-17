@@ -69,12 +69,9 @@ main(int argc, char **argv)
                 fork_you(&opts, ctx, buffs);
 
         /* free all resources */
-        if (buffs != NULL)
-                free_buffers(buffs);
-        if (cond != NULL)
-                free_conditions(cond);
-        if (ctx != NULL)
-                context_close(ctx);
+        free_buffers(buffs);
+        free_conditions(cond);
+        context_close(ctx);
 
         return (0);
 }
