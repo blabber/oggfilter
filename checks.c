@@ -17,6 +17,12 @@
 
 #include "checks.h"
 
+struct context {
+        struct conditions *cond;
+        iconv_t         conv;
+        regex_t        *regex;
+};
+
 struct oggfile {
         char           *path;
         OggVorbis_File  ovf;

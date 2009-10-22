@@ -115,7 +115,7 @@ Documentation
     BUGS
          Expect some rough edges as this was my first take on a C program.
     
-    FreeBSD 7.2                     March 25, 2009                     FreeBSD 7.2
+    FreeBSD 8.0                     March 25, 2009                     FreeBSD 8.0
 
 Portability issues
 ------------------

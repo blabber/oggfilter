@@ -24,14 +24,7 @@ struct conditions {
         char           *expression;
 };
 
-/*
- * Members of this struct are considered private
- */
-struct context {
-        struct conditions *cond;
-        iconv_t         conv;
-        regex_t        *regex;
-};
+struct context;
 
 int             check_file(char *_path, struct context *_ctx);
 struct context *context_open(struct conditions *_cond);
