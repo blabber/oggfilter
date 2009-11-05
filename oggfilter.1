@@ -172,6 +172,20 @@ oggfilter to prepend a base path to the read ogg/vorbis files:
 .Dl oggfilter -d /my/music -x '^genre=.*metal$' < relative.m3u
 .
 .
+.Sh PORTABILITY
+.
+.Nm
+was written in ANSI/C so it should compile on every unix-like platform
+supporting an ANSI/C compiler and libvorbis. But this was written on a 
+.Fx
+system and has not been tested on other platforms. 
+.Pp
+The supplied Makefile is a BSD-style Makefile and uses the 
+.Fx
+infrastructure. This is not portable, but as oggfilter is pretty simple there
+should be no problem to write a simple Makefile for other platforms.
+.
+.
 .Sh DIAGNOSTICS
 .
 Messages should be self-explanatory.
@@ -196,5 +210,11 @@ Messages should be self-explanatory.
 .Sh BUGS
 .
 Expect some rough edges as this was my first take on a C program.
+.Pp
+.Nm
+doesn't support wide or multibyte characters.
+.Pp
+If you find a bug drop me a mail or file an issue at 
+.Dl http://github.com/tobreh/oggfilter/issues
 .
 .

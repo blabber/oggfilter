@@ -1,6 +1,5 @@
 PROG=		oggfilter
 SRCS=		${PROG}.c options.c checks.c list.c
-README=		README.markdown
 
 CSTD?=		c89
 WARNS?=		6
@@ -14,25 +13,21 @@ CFLAGS+=	-I/usr/local/include
 LDFLAGS+=	-L/usr/local/lib 
 LDADD+=		-lvorbisfile -liconv
 
-CLEANFILES=	*.[Bb][Aa][Kk] *.core ${MAN1}.txt
+CLEANFILES=	*.[Bb][Aa][Kk] *.core
 CTAGS=		ctags
 
 COL=		/usr/bin/col
 FIND=		/usr/bin/find
 INDENT=		/usr/bin/indent
 M4=		/usr/bin/m4
-SED=		/usr/bin/sed
 XARGS=		/usr/bin/xargs
 
-all:		${README} indent
+all:		README indent
 
 .include <bsd.prog.mk>
 
 indent: .PHONY
 	${FIND} . -type f -name '*.[c,h]' | ${XARGS} -n 1 ${INDENT}
 
-${MAN1}.txt:	${MAN1}
-	${MROFF_CMD} ${MAN1} | ${COL} -bx | ${SED} 's/^/    /' > ${.TARGET}
-
-${README}:	${README}.m4 ${MAN1}.txt
-	${M4} ${README}.m4 > ${README} 
+README:	${MAN1}
+	${MROFF_CMD} ${MAN1} | ${COL} -bx > ${.TARGET}
