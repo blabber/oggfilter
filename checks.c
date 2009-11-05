@@ -32,6 +32,7 @@ struct oggfile {
 struct regex {
         char           *pattern;
         regex_t        *regex;
+        int             invert;
 };
 
 static int      check_bitrate(struct oggfile *of, struct context *ctx);
@@ -95,12 +96,15 @@ context_open(struct conditions *cond)
         for (e = cond->regexlist; e != NULL; e = e->next) {
                 struct regex   *re;
                 struct element *ne;
+                struct cond_expression *cx;
                 int             errcode;
 
                 if ((re = malloc(sizeof(*re))) == NULL)
                         err(EX_SOFTWARE, "could not allocate regex structure");
 
-                re->pattern = e->payload;
+                cx = e->payload;
+                re->invert = cx->invert;
+                re->pattern = cx->expression;
                 if ((re->regex = malloc(sizeof(*(re->regex))))== NULL)
                         err(EX_SOFTWARE, "could not allocate regex struct");
 
@@ -233,11 +237,13 @@ check_comments(struct oggfile *of, struct context *ctx)
                 return (0);
         }
         for (e = ctx->regexlist; e != NULL; e = e->next) {
+                struct regex   *re;
                 int             i;
                 int             match = 0;
 
+                re = e->payload;
+
                 for (i = 0; i < ovc->comments; i++) {
-                        struct regex   *re;
                         char            conv_comment_buffer[256];
                         char           *comment, *conv_comment;
                         char          **from, **to;
@@ -257,14 +263,12 @@ check_comments(struct oggfile *of, struct context *ctx)
                                 }
                         *to[0] = '\0';
 
-                        re = e->payload;
                         if (regexec(re->regex, conv_comment_buffer, 0, NULL, 0)== 0)
                                 match = 1;
-
-
                 }
 
-                if (!match)
+                assert(re->invert == 0 || re->invert == 1);
+                if (!match ^ re->invert)
                         return (0);
         }
 

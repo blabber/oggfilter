@@ -151,8 +151,16 @@ get_conditions(struct options *opts)
 
         for (oe = opts->expressionlist; oe != NULL; oe = oe->next) {
                 struct element *ce;
+                struct expression *ox;
+                struct cond_expression *cx;
 
-                if ((ce = create_element(oe->payload)) == NULL)
+                if ((cx = malloc(sizeof(*cx))) == NULL)
+                        err(EX_SOFTWARE, "could not allocate cond_expression");
+
+                ox = oe->payload;
+                cx->expression = ox->expression;
+                cx->invert = ox->invert;
+                if ((ce = create_element(cx)) == NULL)
                         err(EX_SOFTWARE, "could not create regex element");
 
                 cond->regexlist = prepend_element(ce, cond->regexlist);
@@ -169,8 +177,10 @@ free_conditions(struct conditions *cond)
         assert(cond != NULL);
 
         e = cond->regexlist;
-        while (e != NULL)
+        while (e != NULL) {
+                free(e->payload);
                 e = destroy_element(e);
+        }
 
         free(cond);
 }

@@ -23,5 +23,10 @@ struct options {
         int             processes;
 };
 
+struct expression {
+        char           *expression;
+        int             invert;
+};
+
 struct options *get_options(int _argc, char *_argv[]);
 int             free_options(struct options *opts);

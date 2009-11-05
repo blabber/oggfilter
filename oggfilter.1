@@ -24,6 +24,7 @@
 .Op Fl b | Fl -min-bitrate Ar bitrate
 .Op Fl B | Fl -max-bitrate Ar bitrate
 .Op Fl x | Fl -expression Ar regexp
+.Op Fl X | Fl -exclude-expression Ar regexp
 .Op Fl d | Fl -directory Ar directory
 .Op Fl P | Fl -processes Ar count
 .Op Fl v | Fl -invert
@@ -75,6 +76,14 @@ The regular expression matching is always case-insensitive. See
 .Xr re_format 7
 for a complete discussion of the extended regular expression format. This option
 may be specified multiple times.
+.
+.It Fl X | Fl -exclude-expression Ar regexp
+This is the inversion of the
+.Fl x
+flag. It excludes any ogg/vorbis files containing at least one vorbiscomment
+matching the extended regular expression
+.Ar regexp . 
+This option may be specified multiple times.
 .
 .It Fl d | Fl -directory Ar directory
 Prepends every line read from standard input with 
@@ -138,6 +147,14 @@ and containing
 in it's title use the following command line:
 .Pp
 .Dl oggfilter -x '^genre=thrash metal$' -x '^title=.*death.*' < playlist.m3u
+.Pp
+To get a list of all your ogg/vorbis files tagged with genre 
+.Dq Thrash Metal
+and not containing
+.Dq death
+in it's title use the following command line:
+.Pp
+.Dl oggfilter -x '^genre=thrash metal$' -X '^title=.*death.*' < playlist.m3u
 .Pp
 To get a list of all ogg/vorbis files with a maximum playtime of 5 minutes and
 a minimum playtime of 3 minutes you may use:

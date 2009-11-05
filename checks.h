@@ -25,6 +25,11 @@ struct conditions {
         struct element *regexlist;
 };
 
+struct cond_expression {
+        char           *expression;
+        int             invert;
+};
+
 struct context;
 
 int             check_file(char *_path, struct context *_ctx);

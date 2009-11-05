@@ -26,7 +26,7 @@ enum {
 static void     init_options(struct options *opts);
 static long     parse_long(char *option);
 static double   parse_period(char *period);
-static int      prepend_expression(struct options *opts, char *expression);
+static int      prepend_expression(struct options *opts, char *expression, int invert);
 static void     print_usage(void);
 
 struct options *
@@ -37,6 +37,7 @@ get_options(int argc, char *argv[])
                 {"min-length", required_argument, NULL, 'l'},
                 {"max-length", required_argument, NULL, 'L'},
                 {"expression", required_argument, NULL, 'x'},
+                {"exclude-expression", required_argument, NULL, 'X'},
                 {"invert", no_argument, NULL, 'v'},
                 {"help", no_argument, NULL, 'h'},
                 {"min-bitrate", required_argument, NULL, 'b'},
@@ -54,7 +55,7 @@ get_options(int argc, char *argv[])
 
         init_options(opts);
 
-        while ((opt = getopt_long(argc, argv, "hd:l:L:x:vb:B:P:", longopts, NULL)) != -1)
+        while ((opt = getopt_long(argc, argv, "hd:l:L:x:X:vb:B:P:", longopts, NULL)) != -1)
                 switch (opt) {
                 case 'd':
                         opts->pathprefix = optarg;
@@ -66,7 +67,10 @@ get_options(int argc, char *argv[])
                         opts->max_length = parse_period(optarg);
                         break;
                 case 'x':
-                        prepend_expression(opts, optarg);
+                        prepend_expression(opts, optarg, 0);
+                        break;
+                case 'X':
+                        prepend_expression(opts, optarg, 1);
                         break;
                 case 'b':
                         opts->min_bitrate = parse_long(optarg) * 1000;
@@ -99,8 +103,10 @@ free_options(struct options *opts)
         assert(opts != NULL);
 
         e = opts->expressionlist;
-        while (e != NULL)
+        while (e != NULL) {
+                free(e->payload);
                 e = destroy_element(e);
+        }
 
         return (0);
 }
@@ -110,8 +116,9 @@ print_usage()
 {
         printf("oggfilter [-l|--min-length period] [-L|--max-length period]\n");
         printf("          [-b|--min-bitrate bitrate] [-B|--max-bitrate]\n");
-        printf("          [-x|--expression expression] [-d|--directory directory]\n");
-        printf("          [-P|--processes count] [-v|--invert]\n\n");
+        printf("          [-x|--expression regexp] [-X|--exclude-expression regexp]\n");
+        printf("          [-d|--directory directory] [-P|--processes count]\n");
+        printf("          [-v|--invert]\n\n");
         printf("oggfilter {-h|--help}\n");
 }
 
@@ -182,14 +189,22 @@ parse_long(char *option)
 }
 
 static int
-prepend_expression(struct options *opts, char *expression)
+prepend_expression(struct options *opts, char *expression, int invert)
 {
         struct element *e;
+        struct expression *x;
 
         assert(opts != NULL);
-        assert(expression != NULL);
+        assert(expression !=NULL);
+        assert(invert == 0 || invert == 1);
 
-        if ((e = create_element(expression)) == NULL)
+        if ((x = malloc(sizeof(*x))) == NULL)
+                err(EX_SOFTWARE, "could not malloc expression");
+
+        x->expression = expression;
+        x->invert = invert;
+
+        if ((e = create_element(x)) == NULL)
                 err(EX_SOFTWARE, "could not create expression element");
         opts->expressionlist = prepend_element(e, opts->expressionlist);
 

@@ -12,8 +12,9 @@ Documentation
     SYNOPSIS
          oggfilter [-l | --min-length period] [-L | --max-length period]
                    [-b | --min-bitrate bitrate] [-B | --max-bitrate bitrate]
-                   [-x | --expression regexp] [-d | --directory directory]
-                   [-P | --processes count] [-v | --invert]
+                   [-x | --expression regexp] [-X | --exclude-expression regexp]
+                   [-d | --directory directory] [-P | --processes count]
+                   [-v | --invert]
     
          oggfilter {-h | --help}
     
@@ -52,6 +53,12 @@ Documentation
                      re_format(7) for a complete discussion of the extended regu-
                      lar expression format. This option may be specified multiple
                      times.
+    
+         -X | --exclude-expression regexp
+                     This is the inversion of the -x flag. It excludes any
+                     ogg/vorbis files containing at least one vorbiscomment match-
+                     ing the extended regular expression regexp.  This option may
+                     be specified multiple times.
     
          -d | --directory directory
                      Prepends every line read from standard input with directory
@@ -92,6 +99,13 @@ Documentation
          line:
     
                oggfilter -x '^genre=thrash metal$' -x '^title=.*death.*' <
+               playlist.m3u
+    
+         To get a list of all your ogg/vorbis files tagged with genre `Thrash
+         Metal' and not containing `death' in it's title use the following com-
+         mand line:
+    
+               oggfilter -x '^genre=thrash metal$' -X '^title=.*death.*' <
                playlist.m3u
     
          To get a list of all ogg/vorbis files with a maximum playtime of 5 min-
