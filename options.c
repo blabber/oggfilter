@@ -114,6 +114,7 @@ free_options(struct options *opts)
 static void
 print_usage()
 {
+        printf("This is oggfilter v1.0\n\n");
         printf("oggfilter [-l|--min-length period] [-L|--max-length period]\n");
         printf("          [-b|--min-bitrate bitrate] [-B|--max-bitrate]\n");
         printf("          [-x|--expression regexp] [-X|--exclude-expression regexp]\n");
