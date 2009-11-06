@@ -267,6 +267,7 @@ check_comments(struct oggfile *of, struct context *ctx)
                                 match = 1;
                 }
 
+                assert(match == 0 || match == 1);
                 assert(re->invert == 0 || re->invert == 1);
                 if (!match ^ re->invert)
                         return (0);
