@@ -243,6 +243,8 @@ fork_you(struct options *opts, struct context *ctx, struct buffers *buffs)
                         err(EX_OSERR, "could not fork (%d)", i);
                         break;
                 case 0:
+                        if (close(p[0]) == -1)
+                                warn("could not close read end of pipe: %d", i);
                         fds[i] = p[1];
                         break;
                 default:
@@ -262,7 +264,7 @@ fork_you(struct options *opts, struct context *ctx, struct buffers *buffs)
 
         for (i = 0; i < opts->processes; i++)
                 if (close(fds[i]) == -1)
-                        warn("could not close fd: %d", i);
+                        warn("could not close write end of pipe: %d", i);
 out:
         free(fds);
 }
