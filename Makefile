@@ -17,17 +17,10 @@ CLEANFILES=	*.[Bb][Aa][Kk] *.core
 CTAGS=		ctags
 
 COL=		/usr/bin/col
-FIND=		/usr/bin/find
-INDENT=		/usr/bin/indent
-M4=		/usr/bin/m4
-XARGS=		/usr/bin/xargs
 
-all:		README indent
+all:		README
 
 .include <bsd.prog.mk>
-
-indent: .PHONY
-	${FIND} . -type f -name '*.[c,h]' | ${XARGS} -n 1 ${INDENT}
 
 README:	${MAN1}
 	${MROFF_CMD} ${MAN1} | ${COL} -bx > ${.TARGET}
