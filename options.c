@@ -18,6 +18,7 @@
 #include "options.h"
 #include "list.h"
 
+static const char *VERSION = "v1.0.1";
 static const char *PERIOD_EXPRESSION = "^([[:digit:]]{1,})(:([0-5][[:digit:]]))?$";
 enum {
         PERIOD_GROUPS = 4
@@ -114,7 +115,7 @@ free_options(struct options *opts)
 static void
 print_usage()
 {
-        printf("This is oggfilter v1.0\n\n");
+        printf("This is oggfilter %s\n\n", VERSION);
         printf("oggfilter [-l|--min-length period] [-L|--max-length period]\n");
         printf("          [-b|--min-bitrate bitrate] [-B|--max-bitrate]\n");
         printf("          [-x|--expression regexp] [-X|--exclude-expression regexp]\n");
