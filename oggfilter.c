@@ -232,6 +232,7 @@ fork_you(struct options *opts, struct context *ctx, struct buffers *buffs)
                 err(EX_SOFTWARE, "could not malloc file descriptors");
 
         for (i = 0; i < opts->processes; i++) {
+                int             j;
                 int             p[2];
                 pid_t           pid;
 
@@ -243,15 +244,23 @@ fork_you(struct options *opts, struct context *ctx, struct buffers *buffs)
                         err(EX_OSERR, "could not fork (%d)", i);
                         break;
                 case 0:
+                        for (j = 0; j < i; j++)
+                                if (close(fds[j]) == -1)
+                                        warn("child could not close write end of pipe: %d, %d", i, j);
+                        free(fds);
+
+                        if (use_pipe(p) == -1)
+                                err(EX_OSERR, "child could not setup IPC");
+                        process_loop(opts, ctx, buffs);
+                        /*
+                         * Do not explicitely close the read end. You won't
+                         * close stdin either
+                         */
+                        return;
+                default:
                         if (close(p[0]) == -1)
                                 warn("could not close read end of pipe: %d", i);
                         fds[i] = p[1];
-                        break;
-                default:
-                        if (use_pipe(p) == -1)
-                                err(EX_OSERR, "could not setup IPC");
-                        process_loop(opts, ctx, buffs);
-                        goto out;
                 }
         }
 
@@ -265,7 +274,7 @@ fork_you(struct options *opts, struct context *ctx, struct buffers *buffs)
         for (i = 0; i < opts->processes; i++)
                 if (close(fds[i]) == -1)
                         warn("could not close write end of pipe: %d", i);
-out:
+
         free(fds);
 }
 
