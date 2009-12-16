@@ -40,8 +40,7 @@ struct buffers *get_buffers(struct options *opts);
 struct conditions *get_conditions(struct options *opts);
 void            process_loop(struct options *opts, struct context *ctx, struct buffers *buffs);
 int             use_pipe(int *p);
-int             set_sigchld_handler(void);
-void            sigchld_handler(int);
+void            wait_for_childs(void);
 
 int
 main(int argc, char **argv)
@@ -225,9 +224,6 @@ fork_you(struct options *opts, struct context *ctx, struct buffers *buffs)
         assert(ctx != NULL);
         assert(buffs != NULL);
 
-        if (set_sigchld_handler() == -1)
-                warn("could not set sigchld handler");
-
         if ((fds = malloc(opts->processes * sizeof(int))) == NULL)
                 err(EX_SOFTWARE, "could not malloc file descriptors");
 
@@ -275,6 +271,8 @@ fork_you(struct options *opts, struct context *ctx, struct buffers *buffs)
                 if (close(fds[i]) == -1)
                         warn("could not close write end of pipe: %d", i);
 
+        wait_for_childs();
+
         free(fds);
 }
 
@@ -295,34 +293,15 @@ use_pipe(int *p)
         return (0);
 }
 
-int
-set_sigchld_handler(void)
-{
-        struct sigaction sa;
-
-        sa.sa_handler = &sigchld_handler;
-        sa.sa_flags = SA_NOCLDSTOP;
-        if (sigemptyset(&(sa.sa_mask)) == -1)
-                return (-1);
-
-        if (sigaction(SIGCHLD, &sa, NULL) == -1)
-                return (-1);
-
-        return (0);
-}
 
 void
-sigchld_handler(int sig)
+wait_for_childs()
 {
         pid_t           pid;
         int             sts;
 
-        assert(sig == SIGCHLD);
-
-        if ((pid = wait(&sts)) == -1) {
-                warn("could not get child status");
-                return;
+        while ((pid = wait(&sts)) != -1) {
+                if (WIFEXITED(sts) && WEXITSTATUS(sts) != 0)
+                        warn("child %d exited abnormally: %d", pid, sts);
         }
-        if (WIFEXITED(sts) && WEXITSTATUS(sts) != 0)
-                warn("child %d exited abnormally: %d", pid, sts);
 }
