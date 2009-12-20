@@ -167,7 +167,8 @@ To get a list of ogg/vorbis files encoded with a minimal nominal bitrate of
 .Dl oggfilter -b 120 < playlist.m3u
 .Pp
 If you are piping from a playlist containing relative paths you can tell
-oggfilter to prepend a base path to the read ogg/vorbis files:
+.Nm
+to prepend a base path to the read ogg/vorbis files:
 .Pp
 .Dl oggfilter -d /my/music -x '^genre=.*metal$' < relative.m3u
 .
@@ -182,8 +183,10 @@ system and has not been tested on other platforms.
 .Pp
 The supplied Makefile is a BSD-style Makefile and uses the 
 .Fx
-infrastructure. This is not portable, but as oggfilter is pretty simple there
-should be no problem to write a simple Makefile for other platforms.
+infrastructure. This is not portable, but as
+.Nm
+is pretty simple there should be no problem to write a simple Makefile for
+other platforms.
 .
 .
 .Sh DIAGNOSTICS
@@ -212,7 +215,7 @@ Messages should be self-explanatory.
 Expect some rough edges as this was my first take on a C program.
 .Pp
 .Nm
-doesn't support wide or multibyte characters.
+doesn't explicitly support wide or multibyte characters.
 .Pp
 If you find a bug drop me a mail or file an issue at 
 .Dl http://github.com/tobreh/oggfilter/issues
