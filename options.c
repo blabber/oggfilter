@@ -117,7 +117,7 @@ print_usage()
 {
         printf("This is oggfilter %s\n\n", VERSION);
         printf("oggfilter [-l|--min-length period] [-L|--max-length period]\n");
-        printf("          [-b|--min-bitrate bitrate] [-B|--max-bitrate]\n");
+        printf("          [-b|--min-bitrate bitrate] [-B|--max-bitrate bitrate]\n");
         printf("          [-x|--expression regexp] [-X|--exclude-expression regexp]\n");
         printf("          [-d|--directory directory] [-P|--processes count]\n");
         printf("          [-v|--invert]\n\n");

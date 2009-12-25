@@ -140,7 +140,7 @@ AUTHORS
 BUGS
      Expect some rough edges as this was my first take on a C program.
 
-     oggfilter doesn't support wide or multibyte characters.
+     oggfilter doesn't explicitly support wide or multibyte characters.
 
      If you find a bug drop me a mail or file an issue at
            http://github.com/tobreh/oggfilter/issues
