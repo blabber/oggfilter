@@ -38,7 +38,7 @@ void            free_buffers(struct buffers *buffs);
 void            free_conditions(struct conditions *cond);
 struct buffers *get_buffers(struct options *opts);
 struct conditions *get_conditions(struct options *opts);
-void            process_loop(struct options *opts, struct context *ctx, struct buffers *buffs);
+void            process_loop(struct options *opts, struct context *ctx, struct buffers *buffs, int doflush);
 int             use_pipe(int *p);
 void            wait_for_childs(void);
 
@@ -65,7 +65,7 @@ main(int argc, char **argv)
 
         /* enter main loop or fork away */
         if (opts->processes <= 1)
-                process_loop(opts, ctx, buffs);
+                process_loop(opts, ctx, buffs, 0);
         else
                 fork_you(opts, ctx, buffs);
 
@@ -185,11 +185,12 @@ free_conditions(struct conditions *cond)
 }
 
 void
-process_loop(struct options *opts, struct context *ctx, struct buffers *buffs)
+process_loop(struct options *opts, struct context *ctx, struct buffers *buffs, int doflush)
 {
         assert(opts != NULL);
         assert(ctx != NULL);
         assert(buffs != NULL);
+        assert(doflush == 0 || doflush == 1);
 
         while (fgets(buffs->in, MAXLINE, stdin) != NULL) {
                 int             check_result;
@@ -207,8 +208,11 @@ process_loop(struct options *opts, struct context *ctx, struct buffers *buffs)
                 check_result = check_file(path, ctx);
                 assert(check_result == 0 || check_result == 1);
                 assert(opts->invert == 0 || opts->invert == 1);
-                if (check_result ^ opts->invert)
+                if (check_result ^ opts->invert) {
                         printf("%s\n", path);
+                        if (doflush)
+                                fflush(stdout);
+                }
         }
         if (ferror(stdin))
                 err(EX_SOFTWARE, "could not completely read stdin");
@@ -247,7 +251,7 @@ fork_you(struct options *opts, struct context *ctx, struct buffers *buffs)
 
                         if (use_pipe(p) == -1)
                                 err(EX_OSERR, "child could not setup IPC");
-                        process_loop(opts, ctx, buffs);
+                        process_loop(opts, ctx, buffs, 1);
                         /*
                          * Do not explicitely close the read end. You won't
                          * close stdin either
