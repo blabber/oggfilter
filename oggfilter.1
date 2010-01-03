@@ -28,6 +28,7 @@
 .Op Fl d | Fl -directory Ar directory
 .Op Fl P | Fl -processes Ar count
 .Op Fl v | Fl -invert
+.Op Fl I | Fl -no-ignorecase
 .Pp
 .Nm
 .Brq Fl h | Fl -help
@@ -72,7 +73,9 @@ kbps
 Matches every ogg/vorbis file containing at least one vorbiscomment matching
 the extended regular expression
 .Ar regexp .
-The regular expression matching is always case-insensitive. See 
+The regular expression matching is case-insensitive unless the 
+.Fl I
+flag is given. See 
 .Xr re_format 7
 for a complete discussion of the extended regular expression format. This option
 may be specified multiple times.
@@ -99,12 +102,19 @@ Instructs
 .Nm
 to spawn 
 .Ar count
-worker processes. This may speed up the processing on multi processor machines. A good choice is to
-set 
+worker processes. This may speed up the processing on multi processor machines.
+A good choice is to set 
 .Ar count
 equal to the amount of processor cores available. By default 
 .Nm
 runs as a single process.
+.
+.It Fl I | Fl -no-ignorecase
+This flag makes all expressions provided via
+.Fl x
+and
+.Fl X
+case sensitive.
 .
 .It Fl h | Fl -help
 Print the synopsis of 

@@ -98,6 +98,7 @@ context_open(struct conditions *cond)
                 struct element *ne;
                 struct cond_expression *cx;
                 int             errcode;
+                int             flags;
 
                 if ((re = malloc(sizeof(*re))) == NULL)
                         err(EX_SOFTWARE, "could not allocate regex structure");
@@ -108,7 +109,8 @@ context_open(struct conditions *cond)
                 if ((re->regex = malloc(sizeof(*(re->regex))))== NULL)
                         err(EX_SOFTWARE, "could not allocate regex struct");
 
-                if ((errcode = regcomp(re->regex, re->pattern, REG_ICASE | REG_EXTENDED)) != 0) {
+                flags = cond->noignorecase ? REG_EXTENDED : REG_ICASE | REG_EXTENDED;
+                if ((errcode = regcomp(re->regex, re->pattern, flags)) != 0) {
                         char            errstr[128];
 
                         regerror(errcode, re->regex, errstr, sizeof(errstr));

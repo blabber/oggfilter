@@ -23,6 +23,7 @@ struct conditions {
         long            min_bitrate;
         long            max_bitrate;
         struct element *regexlist;
+        int             noignorecase;
 };
 
 struct cond_expression {

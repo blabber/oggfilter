@@ -8,7 +8,7 @@ SYNOPSIS
                [-b | --min-bitrate bitrate] [-B | --max-bitrate bitrate]
                [-x | --expression regexp] [-X | --exclude-expression regexp]
                [-d | --directory directory] [-P | --processes count]
-               [-v | --invert]
+               [-v | --invert] [-I | --no-ignorecase]
 
      oggfilter {-h | --help}
 
@@ -43,10 +43,10 @@ DESCRIPTION
      -x | --expression regexp
                  Matches every ogg/vorbis file containing at least one vorbis-
                  comment matching the extended regular expression regexp.  The
-                 regular expression matching is always case-insensitive. See
-                 re_format(7) for a complete discussion of the extended regu-
-                 lar expression format. This option may be specified multiple
-                 times.
+                 regular expression matching is case-insensitive unless the -I
+                 flag is given. See re_format(7) for a complete discussion of
+                 the extended regular expression format. This option may be
+                 specified multiple times.
 
      -X | --exclude-expression regexp
                  This is the inversion of the -x flag. It excludes any
@@ -64,9 +64,13 @@ DESCRIPTION
 
      -P | --processes count
                  Instructs oggfilter to spawn count worker processes. This may
-                 speed up the processing on multi processor machines. A good
+                 speed up the processing on multi processor machines.  A good
                  choice is to set count equal to the amount of processor cores
                  available. By default oggfilter runs as a single process.
+
+     -I | --no-ignorecase
+                 This flag makes all expressions provided via -x and -X case
+                 sensitive.
 
      -h | --help
                  Print the synopsis of oggfilter and exit. This overrides any

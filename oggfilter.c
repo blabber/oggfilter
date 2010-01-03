@@ -147,6 +147,7 @@ get_conditions(struct options *opts)
         cond->max_length = opts->max_length;
         cond->min_bitrate = opts->min_bitrate;
         cond->max_bitrate = opts->max_bitrate;
+        cond->noignorecase = opts->noignorecase;
 
         for (oe = opts->expressionlist; oe != NULL; oe = oe->next) {
                 struct element *ce;

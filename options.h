@@ -21,6 +21,7 @@ struct options {
         char           *pathprefix;
         int             invert;
         int             processes;
+        int             noignorecase;
 };
 
 struct expression {
