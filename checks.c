@@ -87,12 +87,10 @@ context_open(struct conditions *cond)
         if ((ctx = malloc(sizeof(*ctx))) == NULL)
                 err(EX_SOFTWARE, "could not allocate check context");
 
-        ctx->cond = NULL;
-        ctx->conv = (iconv_t) (-1);
-
         if ((ctx->conv = iconv_open("", "UTF-8")) == (iconv_t) (-1))
                 err(EX_SOFTWARE, "could not open conversion descriptor");
 
+        ctx->regexlist = NULL;
         for (e = cond->regexlist; e != NULL; e = e->next) {
                 struct regex   *re;
                 struct element *ne;
