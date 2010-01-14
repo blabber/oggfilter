@@ -18,7 +18,7 @@
 #include "options.h"
 #include "list.h"
 
-static const char *VERSION = "v1.1.0";
+static const char *VERSION = "v1.2.0";
 static const char *PERIOD_EXPRESSION = "^([[:digit:]]{1,})(:([0-5][[:digit:]]))?$";
 enum {
         PERIOD_GROUPS = 4
