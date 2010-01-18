@@ -17,7 +17,7 @@
 /*
  * These conditions have to be set by the caller
  */
-struct conditions {
+struct chk_conditions {
         double          min_length;
         double          max_length;
         long            min_bitrate;
@@ -26,14 +26,14 @@ struct conditions {
         int             noignorecase;
 };
 
-struct cond_expression {
+struct chk_expression {
         char           *expression;
         int             invert;
 };
 
-struct context;
+struct chk_context;
 
-int             check_file(char *_path, struct context *_ctx);
-struct context *context_open(struct conditions *_cond);
-void            context_close(struct context *_ctx);
-void            init_conditions(struct conditions *_cond);
+int             chk_check_file(char *_path, struct chk_context *_ctx);
+struct chk_context *context_open(struct chk_conditions *_cond);
+void            chk_context_close(struct chk_context *_ctx);
+void            chk_init_conditions(struct chk_conditions *_cond);

@@ -33,12 +33,12 @@ struct buffers {
         char           *in;
 };
 
-void            fork_you(struct opt_options *opts, struct context *ctx, struct buffers *buffs);
+void            fork_you(struct opt_options *opts, struct chk_context *ctx, struct buffers *buffs);
 void            free_buffers(struct buffers *buffs);
-void            free_conditions(struct conditions *cond);
+void            free_conditions(struct chk_conditions *cond);
 struct buffers *get_buffers(struct opt_options *opts);
-struct conditions *get_conditions(struct opt_options *opts);
-void            process_loop(struct opt_options *opts, struct context *ctx, struct buffers *buffs, int doflush);
+struct chk_conditions *get_conditions(struct opt_options *opts);
+void            process_loop(struct opt_options *opts, struct chk_context *ctx, struct buffers *buffs, int doflush);
 int             use_pipe(int *p);
 void            wait_for_childs(void);
 
@@ -46,8 +46,8 @@ int
 main(int argc, char **argv)
 {
         struct opt_options *opts = NULL;
-        struct conditions *cond = NULL;
-        struct context *ctx = NULL;
+        struct chk_conditions *cond = NULL;
+        struct chk_context *ctx = NULL;
         struct buffers *buffs = NULL;
 
         if (!setlocale(LC_ALL, ""))
@@ -72,7 +72,7 @@ main(int argc, char **argv)
         /* free all resources */
         free_buffers(buffs);
         free_conditions(cond);
-        context_close(ctx);
+        chk_context_close(ctx);
         opt_free_options(opts);
 
         return (0);
@@ -130,10 +130,10 @@ free_buffers(struct buffers *buffs)
         buffs->in = NULL;
 }
 
-struct conditions *
+struct chk_conditions *
 get_conditions(struct opt_options *opts)
 {
-        struct conditions *cond;
+        struct chk_conditions *cond;
         struct element *oe;
 
         assert(opts != NULL);
@@ -141,7 +141,7 @@ get_conditions(struct opt_options *opts)
         if ((cond = malloc(sizeof(*cond))) == NULL)
                 return (NULL);
 
-        init_conditions(cond);
+        chk_init_conditions(cond);
 
         cond->min_length = opts->min_length;
         cond->max_length = opts->max_length;
@@ -152,7 +152,7 @@ get_conditions(struct opt_options *opts)
         for (oe = opts->expressionlist; oe != NULL; oe = oe->next) {
                 struct element *ce;
                 struct opt_expression *ox;
-                struct cond_expression *cx;
+                struct chk_expression *cx;
 
                 if ((cx = malloc(sizeof(*cx))) == NULL)
                         err(EX_SOFTWARE, "could not allocate cond_expression");
@@ -170,7 +170,7 @@ get_conditions(struct opt_options *opts)
 }
 
 void
-free_conditions(struct conditions *cond)
+free_conditions(struct chk_conditions *cond)
 {
         struct element *e;
 
@@ -186,7 +186,7 @@ free_conditions(struct conditions *cond)
 }
 
 void
-process_loop(struct opt_options *opts, struct context *ctx, struct buffers *buffs, int doflush)
+process_loop(struct opt_options *opts, struct chk_context *ctx, struct buffers *buffs, int doflush)
 {
         assert(opts != NULL);
         assert(ctx != NULL);
@@ -206,7 +206,7 @@ process_loop(struct opt_options *opts, struct context *ctx, struct buffers *buff
                 else
                         path = buffs->path;
 
-                check_result = check_file(path, ctx);
+                check_result = chk_check_file(path, ctx);
                 assert(check_result == 0 || check_result == 1);
                 assert(opts->invert == 0 || opts->invert == 1);
                 if (check_result ^ opts->invert) {
@@ -220,7 +220,7 @@ process_loop(struct opt_options *opts, struct context *ctx, struct buffers *buff
 }
 
 void
-fork_you(struct opt_options *opts, struct context *ctx, struct buffers *buffs)
+fork_you(struct opt_options *opts, struct chk_context *ctx, struct buffers *buffs)
 {
         int            *fds;
         int             i;

@@ -18,10 +18,10 @@
 #include "checks.h"
 #include "list.h"
 
-struct context {
-        struct conditions *cond;
+struct chk_context {
+        struct chk_conditions *cond;
         struct element *regexlist;
-        iconv_t         conv;
+        iconv_t         cd;
 };
 
 struct oggfile {
@@ -35,14 +35,14 @@ struct regex {
         int             invert;
 };
 
-static int      check_bitrate(struct oggfile *of, struct context *ctx);
-static int      check_comments(struct oggfile *of, struct context *ctx);
-static int      check_time(struct oggfile *of, struct context *ctx);
+static int      check_bitrate(struct oggfile *of, struct chk_context *ctx);
+static int      check_comments(struct oggfile *of, struct chk_context *ctx);
+static int      check_time(struct oggfile *of, struct chk_context *ctx);
 static int      oggfile_close(struct oggfile *of);
 static int      oggfile_open(struct oggfile *of, char *path);
 
 int
-check_file(char *path, struct context *ctx)
+chk_check_file(char *path, struct chk_context *ctx)
 {
         struct oggfile  of;
         int             match;
@@ -51,21 +51,22 @@ check_file(char *path, struct context *ctx)
         assert(ctx != NULL);
 
         if (oggfile_open(&of, path) != 0) {
-                warn("could not open oggfile: %s", path);
+                warn("oggfile_open \"%s\"", path);
                 return (0);
         }
         match = check_time(&of, ctx);
         match = match && check_bitrate(&of, ctx);
         match = match && check_comments(&of, ctx);
+        assert(match == 0 || match == 1);
 
         if (oggfile_close(&of) != 0)
-                warn("could not close oggfile: %s", path);
+                warn("oggfile_close \"%s\"", path);
 
-        return match;
+        return (match);
 }
 
 void
-init_conditions(struct conditions *cond)
+chk_init_conditions(struct chk_conditions *cond)
 {
         assert(cond != NULL);
 
@@ -76,36 +77,36 @@ init_conditions(struct conditions *cond)
         cond->regexlist = NULL;
 }
 
-struct context *
-context_open(struct conditions *cond)
+struct chk_context *
+context_open(struct chk_conditions *cond)
 {
-        struct context *ctx;
+        struct chk_context *ctx;
         struct element *e;
 
         assert(cond != NULL);
 
         if ((ctx = malloc(sizeof(*ctx))) == NULL)
-                err(EX_SOFTWARE, "could not allocate check context");
-
-        if ((ctx->conv = iconv_open("", "UTF-8")) == (iconv_t) (-1))
-                err(EX_SOFTWARE, "could not open conversion descriptor");
-
+                err(EX_SOFTWARE, "mallok chk_context");
+        if ((ctx->cd = iconv_open("", "UTF-8")) == (iconv_t) (-1))
+                err(EX_SOFTWARE, "iconv_open");
+        ctx->cond = cond;
         ctx->regexlist = NULL;
+
         for (e = cond->regexlist; e != NULL; e = e->next) {
-                struct regex   *re;
-                struct element *ne;
-                struct cond_expression *cx;
+                struct regex   *re = NULL;
+                struct element *ne = NULL;
+                struct chk_expression *cx = NULL;
                 int             errcode;
                 int             flags;
 
                 if ((re = malloc(sizeof(*re))) == NULL)
-                        err(EX_SOFTWARE, "could not allocate regex structure");
+                        err(EX_SOFTWARE, "malloc regex");
 
                 cx = e->payload;
                 re->invert = cx->invert;
                 re->pattern = cx->expression;
                 if ((re->regex = malloc(sizeof(*(re->regex))))== NULL)
-                        err(EX_SOFTWARE, "could not allocate regex struct");
+                        err(EX_SOFTWARE, "malloc regex_t");
 
                 flags = REG_EXTENDED;
                 if (!cond->noignorecase)
@@ -115,26 +116,23 @@ context_open(struct conditions *cond)
                         char            errstr[128];
 
                         regerror(errcode, re->regex, errstr, sizeof(errstr));
-                        errx(EX_USAGE, "could not compile regex: %s", re->pattern);
+                        errx(EX_USAGE, "regcomp \"%s\": %s", re->pattern, errstr);
                 }
                 if ((ne = create_element(re)) == NULL)
-                        err(EX_SOFTWARE, "could not allocate regex element");
-
+                        err(EX_SOFTWARE, "create_element regex");
                 ctx->regexlist = prepend_element(ne, ctx->regexlist);
         }
 
-        ctx->cond = cond;
-
-        return ctx;
+        return (ctx);
 }
 
 void
-context_close(struct context *ctx)
+chk_context_close(struct chk_context *ctx)
 {
         assert(ctx != NULL);
 
-        if (iconv_close(ctx->conv) == -1)
-                warn("could not close conversion descriptor");
+        if (iconv_close(ctx->cd) == -1)
+                warn("iconv_close");
 
         while (ctx->regexlist != NULL) {
                 struct regex   *r;
@@ -156,6 +154,7 @@ oggfile_open(struct oggfile *of, char *path)
 
         if (ov_fopen((char *)path, &of->ovf) != 0)
                 return (1);
+
         of->path = path;
 
         return (0);
@@ -166,15 +165,16 @@ oggfile_close(struct oggfile *of)
 {
         assert(of != NULL);
 
-        of->path = NULL;
         if (ov_clear(&of->ovf) != 0)
                 return (1);
+
+        of->path = NULL;
 
         return (0);
 }
 
 static int
-check_time(struct oggfile *of, struct context *ctx)
+check_time(struct oggfile *of, struct chk_context *ctx)
 {
         double          time;
         double          min_length;
@@ -184,7 +184,7 @@ check_time(struct oggfile *of, struct context *ctx)
         assert(ctx != NULL);
 
         if ((time = ov_time_total(&of->ovf, -1)) == OV_EINVAL) {
-                warnx("could not get total time: %s", of->path);
+                warnx("ov_time_total \"%s\"", of->path);
                 return (0);
         }
         min_length = ctx->cond->min_length;
@@ -199,9 +199,9 @@ check_time(struct oggfile *of, struct context *ctx)
 }
 
 static int
-check_bitrate(struct oggfile *of, struct context *ctx)
+check_bitrate(struct oggfile *of, struct chk_context *ctx)
 {
-        vorbis_info    *ovi;
+        vorbis_info    *ovi = NULL;
         long            nominal;
         long            min_bitrate;
         long            max_bitrate;
@@ -210,7 +210,7 @@ check_bitrate(struct oggfile *of, struct context *ctx)
         assert(ctx != NULL);
 
         if ((ovi = ov_info(&of->ovf, -1)) == NULL) {
-                warnx("could not read vorbis info: %s", of->path);
+                warnx("ov_info \"%s\"", of->path);
                 return (0);
         }
         nominal = ovi->bitrate_nominal;
@@ -227,16 +227,16 @@ check_bitrate(struct oggfile *of, struct context *ctx)
 }
 
 static int
-check_comments(struct oggfile *of, struct context *ctx)
+check_comments(struct oggfile *of, struct chk_context *ctx)
 {
-        vorbis_comment *ovc;
-        struct element *e;
+        vorbis_comment *ovc = NULL;
+        struct element *e = NULL;
 
         assert(of != NULL);
         assert(ctx != NULL);
 
         if ((ovc = ov_comment(&of->ovf, -1)) == NULL) {
-                warnx("could not read vorbiscomments: %s", of->path);
+                warnx("ov_comment \"%s\"", of->path);
                 return (0);
         }
         for (e = ctx->regexlist; e != NULL; e = e->next) {
@@ -260,8 +260,8 @@ check_comments(struct oggfile *of, struct context *ctx)
                         tolen = sizeof(conv_comment_buffer);
 
                         while (fromlen > 0)
-                                if (iconv(ctx->conv, (const char **)from, &fromlen, to, &tolen) == (size_t) (-1)) {
-                                        warnx("could not convert: %s", ovc->user_comments[i]);
+                                if (iconv(ctx->cd, (const char **)from, &fromlen, to, &tolen) == (size_t) (-1)) {
+                                        warnx("iconv \"%s\"", ovc->user_comments[i]);
                                         return (0);
                                 }
                         *to[0] = '\0';

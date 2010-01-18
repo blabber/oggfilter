@@ -1,8 +1,8 @@
 -nut
 -Tbuffers
--Tcond_expression
--Tconditions
--Tcontext
+-Tchk_conditions
+-Tchk_context
+-Tchk_expression
 -Telement
 -Toggfile
 -Topt_expression
