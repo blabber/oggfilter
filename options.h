@@ -12,7 +12,7 @@
  * list.h
  */
 
-struct options {
+struct opt_options {
         double          min_length;
         double          max_length;
         long            min_bitrate;
@@ -24,10 +24,10 @@ struct options {
         int             noignorecase;
 };
 
-struct expression {
+struct opt_expression {
         char           *expression;
         int             invert;
 };
 
-struct options *get_options(int _argc, char *_argv[]);
-int             free_options(struct options *opts);
+struct opt_options *opt_get_options(int _argc, char *_argv[]);
+int             opt_free_options(struct opt_options *opts);

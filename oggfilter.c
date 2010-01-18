@@ -33,19 +33,19 @@ struct buffers {
         char           *in;
 };
 
-void            fork_you(struct options *opts, struct context *ctx, struct buffers *buffs);
+void            fork_you(struct opt_options *opts, struct context *ctx, struct buffers *buffs);
 void            free_buffers(struct buffers *buffs);
 void            free_conditions(struct conditions *cond);
-struct buffers *get_buffers(struct options *opts);
-struct conditions *get_conditions(struct options *opts);
-void            process_loop(struct options *opts, struct context *ctx, struct buffers *buffs, int doflush);
+struct buffers *get_buffers(struct opt_options *opts);
+struct conditions *get_conditions(struct opt_options *opts);
+void            process_loop(struct opt_options *opts, struct context *ctx, struct buffers *buffs, int doflush);
 int             use_pipe(int *p);
 void            wait_for_childs(void);
 
 int
 main(int argc, char **argv)
 {
-        struct options *opts = NULL;
+        struct opt_options *opts = NULL;
         struct conditions *cond = NULL;
         struct context *ctx = NULL;
         struct buffers *buffs = NULL;
@@ -54,7 +54,7 @@ main(int argc, char **argv)
                 warnx("could not set locale");
 
         /* setup environment */
-        if ((opts = get_options(argc, argv)) == NULL)
+        if ((opts = opt_get_options(argc, argv)) == NULL)
                 err(EX_SOFTWARE, "could not obtain options");
         if ((buffs = get_buffers(opts)) == NULL)
                 err(EX_SOFTWARE, "could note obtain buffs");
@@ -73,13 +73,13 @@ main(int argc, char **argv)
         free_buffers(buffs);
         free_conditions(cond);
         context_close(ctx);
-        free_options(opts);
+        opt_free_options(opts);
 
         return (0);
 }
 
 struct buffers *
-get_buffers(struct options *opts)
+get_buffers(struct opt_options *opts)
 {
         const char     *errstr = "could not allocate memory: buffs->path";
         struct buffers *buffs;
@@ -131,7 +131,7 @@ free_buffers(struct buffers *buffs)
 }
 
 struct conditions *
-get_conditions(struct options *opts)
+get_conditions(struct opt_options *opts)
 {
         struct conditions *cond;
         struct element *oe;
@@ -151,7 +151,7 @@ get_conditions(struct options *opts)
 
         for (oe = opts->expressionlist; oe != NULL; oe = oe->next) {
                 struct element *ce;
-                struct expression *ox;
+                struct opt_expression *ox;
                 struct cond_expression *cx;
 
                 if ((cx = malloc(sizeof(*cx))) == NULL)
@@ -186,7 +186,7 @@ free_conditions(struct conditions *cond)
 }
 
 void
-process_loop(struct options *opts, struct context *ctx, struct buffers *buffs, int doflush)
+process_loop(struct opt_options *opts, struct context *ctx, struct buffers *buffs, int doflush)
 {
         assert(opts != NULL);
         assert(ctx != NULL);
@@ -220,7 +220,7 @@ process_loop(struct options *opts, struct context *ctx, struct buffers *buffs, i
 }
 
 void
-fork_you(struct options *opts, struct context *ctx, struct buffers *buffs)
+fork_you(struct opt_options *opts, struct context *ctx, struct buffers *buffs)
 {
         int            *fds;
         int             i;

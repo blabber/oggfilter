@@ -1,10 +1,10 @@
 -nut
 -Tbuffers
--Toptions
+-Tcond_expression
 -Tconditions
 -Tcontext
 -Telement
--Tregex
 -Toggfile
--Texpression
--Tcond_expression
+-Topt_expression
+-Topt_options
+-Tregex

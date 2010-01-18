@@ -24,14 +24,14 @@ enum {
         PERIOD_GROUPS = 4
 };
 
-static void     init_options(struct options *opts);
+static void     init_options(struct opt_options *opts);
 static long     parse_long(char *option);
 static double   parse_period(char *period);
-static int      prepend_expression(struct options *opts, char *expression, int invert);
+static void     prepend_expression(struct opt_options *opts, char *expression, int invert);
 static void     print_usage(void);
 
-struct options *
-get_options(int argc, char *argv[])
+struct opt_options *
+opt_get_options(int argc, char *argv[])
 {
         struct option   longopts[] = {
                 {"directory", required_argument, NULL, 'd'},
@@ -46,14 +46,14 @@ get_options(int argc, char *argv[])
                 {"processes", required_argument, NULL, 'P'},
                 {"no-ignorecase", no_argument, NULL, 'I'}
         };
-        struct options *opts;
+        struct opt_options *opts = NULL;
         int             opt;
 
         assert(argc >= 0);
         assert(argv != NULL);
 
-        if ((opts = malloc(sizeof(struct options))) == NULL)
-                err(EX_SOFTWARE, "could not malloc options struct");
+        if ((opts = malloc(sizeof(struct opt_options))) == NULL)
+                err(EX_SOFTWARE, "malloc struct opt_options");
 
         init_options(opts);
 
@@ -101,7 +101,7 @@ get_options(int argc, char *argv[])
 }
 
 int
-free_options(struct options *opts)
+opt_free_options(struct opt_options *opts)
 {
         struct element *e;
 
@@ -129,7 +129,7 @@ print_usage()
 }
 
 static void
-init_options(struct options *opts)
+init_options(struct opt_options *opts)
 {
         assert(opts != NULL);
 
@@ -157,11 +157,12 @@ parse_period(char *option)
         if ((errcode = regcomp(&regex, PERIOD_EXPRESSION, REG_EXTENDED)) != 0) {
                 char            errstr[128];
                 regerror(errcode, &regex, errstr, sizeof(errstr));
-                errx(EX_SOFTWARE, "could not compile regex: %s", PERIOD_EXPRESSION);
+                errx(EX_SOFTWARE, "regcomp \"%s\": %s", PERIOD_EXPRESSION, errstr);
         }
         if (regexec(&regex, option, PERIOD_GROUPS, groups, 0)== 0) {
                 char           *minutes = NULL;
-                char           *seconds;
+                char           *seconds = NULL;
+
                 if (groups[2].rm_so == -1)
                         seconds = option;
                 else {
@@ -169,15 +170,16 @@ parse_period(char *option)
                         option[groups[2].rm_so] = '\0';
                         seconds = &option[groups[3].rm_so];
                 }
+
                 if (minutes != NULL)
                         period = parse_long(minutes) * 60;
                 period += parse_long(seconds);
         } else
-                errx(EX_USAGE, "could not parse time format: '%s'", option);
+                errx(EX_USAGE, "invalid period \"%s\"", option);
 
         regfree(&regex);
 
-        return period;
+        return (period);
 }
 
 static long
@@ -190,30 +192,29 @@ parse_long(char *option)
 
         parsed = strtol(option, &endptr, 10);
         if (endptr[0] != '\0')
-                errx(EX_USAGE, "could not parse numeric value: %s", option);
+                errx(EX_USAGE, "illegal number \"%s\"", option);
 
-        return parsed;
+        return (parsed);
 }
 
-static int
-prepend_expression(struct options *opts, char *expression, int invert)
+static void
+prepend_expression(struct opt_options *opts, char *expression, int invert)
 {
         struct element *e;
-        struct expression *x;
+        struct opt_expression *x;
 
         assert(opts != NULL);
-        assert(expression !=NULL);
+        assert(expression != NULL);
         assert(invert == 0 || invert == 1);
 
         if ((x = malloc(sizeof(*x))) == NULL)
-                err(EX_SOFTWARE, "could not malloc expression");
+                err(EX_SOFTWARE, "malloc opt_expression");
 
         x->expression = expression;
         x->invert = invert;
 
         if ((e = create_element(x)) == NULL)
-                err(EX_SOFTWARE, "could not create expression element");
-        opts->expressionlist = prepend_element(e, opts->expressionlist);
+                err(EX_SOFTWARE, "create_element");
 
-        return (0);
+        opts->expressionlist = prepend_element(e, opts->expressionlist);
 }
