@@ -86,7 +86,7 @@ context_open(struct chk_conditions *cond)
         assert(cond != NULL);
 
         if ((ctx = malloc(sizeof(*ctx))) == NULL)
-                err(EX_SOFTWARE, "mallok chk_context");
+                err(EX_SOFTWARE, "malloc chk_context");
         if ((ctx->cd = iconv_open("", "UTF-8")) == (iconv_t) (-1))
                 err(EX_SOFTWARE, "iconv_open");
         ctx->cond = cond;
