@@ -78,7 +78,7 @@ chk_init_conditions(struct chk_conditions *cond)
 }
 
 struct chk_context *
-context_open(struct chk_conditions *cond)
+chk_context_open(struct chk_conditions *cond)
 {
         struct chk_context *ctx;
         struct element *e;

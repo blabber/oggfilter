@@ -60,7 +60,7 @@ main(int argc, char **argv)
                 err(EX_SOFTWARE, "could note obtain buffs");
         if ((cond = get_conditions(opts)) == NULL)
                 err(EX_SOFTWARE, "could note obtain conditions");
-        if ((ctx = context_open(cond)) == NULL)
+        if ((ctx = chk_context_open(cond)) == NULL)
                 err(EX_SOFTWARE, "could not open context");
 
         /* enter main loop or fork away */

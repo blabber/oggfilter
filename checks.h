@@ -34,6 +34,6 @@ struct chk_expression {
 struct chk_context;
 
 int             chk_check_file(char *_path, struct chk_context *_ctx);
-struct chk_context *context_open(struct chk_conditions *_cond);
+struct chk_context *chk_context_open(struct chk_conditions *_cond);
 void            chk_context_close(struct chk_context *_ctx);
 void            chk_init_conditions(struct chk_conditions *_cond);
