@@ -22,6 +22,7 @@ struct opt_options {
         int             invert;
         int             processes;
         int             noignorecase;
+        int             print0;
 };
 
 struct opt_expression {

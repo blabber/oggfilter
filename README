@@ -8,7 +8,7 @@ SYNOPSIS
                [-b | --min-bitrate bitrate] [-B | --max-bitrate bitrate]
                [-x | --expression regexp] [-X | --exclude-expression regexp]
                [-d | --directory directory] [-P | --processes count]
-               [-v | --invert] [-I | --no-ignorecase]
+               [-v | --invert] [-I | --no-ignorecase] [-0 | --print0]
 
      oggfilter {-h | --help}
 
@@ -71,6 +71,11 @@ DESCRIPTION
      -I | --no-ignorecase
                  This flag makes all expressions provided via -x and -X case
                  sensitive.
+
+     -0 | --print0
+                 This flag emits the matching filenames followed by an ASCII
+                 NUL character instead of a newline character. You may use
+                 this to use xargs(1) in conjunction with oggfilter.
 
      -h | --help
                  Print the synopsis of oggfilter and exit. This overrides any
@@ -137,6 +142,7 @@ DIAGNOSTICS
 
 SEE ALSO
      re_format(7), vorbiscomment(1), ogginfo(1), setlocale(3), environ(7)
+     xargs(1)
 
 AUTHORS
      Tobias Rehbein <tobias.rehbein@web.de>

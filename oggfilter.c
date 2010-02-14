@@ -220,7 +220,12 @@ process_loop(struct opt_options *opts, struct chk_context *ctx, struct buffers *
                 assert(check_result == 0 || check_result == 1);
                 assert(opts->invert == 0 || opts->invert == 1);
                 if (check_result ^ opts->invert) {
-                        puts(buffs->path);
+                        fputs(buffs->path, stdout);
+                        if (opts->print0)
+                                putc('\0', stdout);
+                        else
+                                putc('\n', stdout);
+
                         if (doflush)
                                 fflush(stdout);
                 }

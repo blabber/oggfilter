@@ -44,7 +44,8 @@ opt_get_options(int argc, char *argv[])
                 {"min-bitrate", required_argument, NULL, 'b'},
                 {"max-bitrate", required_argument, NULL, 'B'},
                 {"processes", required_argument, NULL, 'P'},
-                {"no-ignorecase", no_argument, NULL, 'I'}
+                {"no-ignorecase", no_argument, NULL, 'I'},
+                {"print0", no_argument, NULL, '0'}
         };
         struct opt_options *opts = NULL;
         int             opt;
@@ -57,7 +58,7 @@ opt_get_options(int argc, char *argv[])
 
         init_options(opts);
 
-        while ((opt = getopt_long(argc, argv, "hd:l:L:x:X:vb:B:P:I", longopts, NULL)) != -1)
+        while ((opt = getopt_long(argc, argv, "hd:l:L:x:X:vb:B:P:I0", longopts, NULL)) != -1)
                 switch (opt) {
                 case 'd':
                         opts->pathprefix = optarg;
@@ -88,6 +89,9 @@ opt_get_options(int argc, char *argv[])
                         break;
                 case 'I':
                         opts->noignorecase = 1;
+                        break;
+                case '0':
+                        opts->print0 = 1;
                         break;
                 case 'h':
                         print_usage();
@@ -124,7 +128,7 @@ print_usage()
         puts("          [-b|--min-bitrate bitrate] [-B|--max-bitrate bitrate]");
         puts("          [-x|--expression regexp] [-X|--exclude-expression regexp]");
         puts("          [-d|--directory directory] [-P|--processes count]");
-        puts("          [-I|--no-ignorecase] [-v|--invert]\n");
+        puts("          [-v|--invert] [-I|--no-ignorecase] [-0|--print0]\n");
         puts("oggfilter {-h|--help}");
 }
 
@@ -142,6 +146,7 @@ init_options(struct opt_options *opts)
         opts->invert = 0;
         opts->processes = 1;
         opts->noignorecase = 0;
+        opts->print0 = 0;
 }
 
 static double
