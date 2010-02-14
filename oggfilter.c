@@ -29,8 +29,10 @@ enum {
 };
 
 struct buffers {
+        char           *pathprefix;
+        char           *pathread;
+        size_t          pathsize;
         char           *path;
-        char           *in;
 };
 
 void            fork_you(struct opt_options *opts, struct chk_context *ctx, struct buffers *buffs);
@@ -51,17 +53,17 @@ main(int argc, char **argv)
         struct buffers *buffs = NULL;
 
         if (!setlocale(LC_ALL, ""))
-                warnx("could not set locale");
+                errx(EX_SOFTWARE, "setlocale LC_ALL");
 
         /* setup environment */
         if ((opts = opt_get_options(argc, argv)) == NULL)
-                err(EX_SOFTWARE, "could not obtain options");
+                err(EX_SOFTWARE, "opt_get_options");
         if ((buffs = get_buffers(opts)) == NULL)
-                err(EX_SOFTWARE, "could note obtain buffs");
+                err(EX_SOFTWARE, "get_buffers");
         if ((cond = get_conditions(opts)) == NULL)
-                err(EX_SOFTWARE, "could note obtain conditions");
+                err(EX_SOFTWARE, "get_conditions");
         if ((ctx = chk_context_open(cond)) == NULL)
-                err(EX_SOFTWARE, "could not open context");
+                err(EX_SOFTWARE, "chk_context_open");
 
         /* enter main loop or fork away */
         if (opts->processes <= 1)
@@ -81,7 +83,6 @@ main(int argc, char **argv)
 struct buffers *
 get_buffers(struct opt_options *opts)
 {
-        const char     *errstr = "could not allocate memory: buffs->path";
         struct buffers *buffs;
 
         assert(opts != NULL);
@@ -89,32 +90,33 @@ get_buffers(struct opt_options *opts)
         if ((buffs = malloc(sizeof(*buffs))) == NULL)
                 return (NULL);
 
-        /*
-         * The strncpy(3) calls in this conditional construct copy one byte
-         * more than needed to copy the string. This makes sure the string
-         * will be null terminated.
-         * 
-         * I tried to write this in a more compact way, but the resulting code
-         * was not very readable, so I'll keep it this way.
-         */
+        if ((buffs->pathread = malloc(MAXLINE)) == NULL)
+                err(EX_OSERR, "malloc buffs->pathread");
+        buffs->pathsize = MAXLINE;
+
         if (opts->pathprefix != NULL) {
-                if (opts->pathprefix[strlen(opts->pathprefix) - 1] == '/') {
-                        if ((buffs->path = malloc(strlen(opts->pathprefix) + MAXLINE)) == NULL)
-                                err(EX_SOFTWARE, "%s", errstr);
-                        strncpy(buffs->path, opts->pathprefix, strlen(opts->pathprefix) + 1);
-                        buffs->in = &buffs->path[strlen(opts->pathprefix)];
+                size_t          len = strlen(opts->pathprefix);
+                if (opts->pathprefix[len - 1] == '/') {
+                        if ((buffs->pathprefix = malloc(len + 1)) == NULL)
+                                err(EX_OSERR, "malloc buffs->pathprefix");
+                        strncpy(buffs->pathprefix, opts->pathprefix, len);
+                        buffs->pathprefix[len] = '\0';
+
+                        buffs->pathsize += len;
                 } else {
-                        if ((buffs->path = malloc(strlen(opts->pathprefix) + 1 + MAXLINE)) == NULL)
-                                err(EX_SOFTWARE, "%s", errstr);
-                        strcpy(buffs->path, opts->pathprefix);
-                        strncpy(&buffs->path[strlen(opts->pathprefix)], "/", 2);
-                        buffs->in = &buffs->path[strlen(opts->pathprefix) + 1];
+                        if ((buffs->pathprefix = malloc(len + 2)) == NULL)
+                                err(EX_OSERR, "malloc buffs->pathprefix");
+                        strncpy(buffs->pathprefix, opts->pathprefix, len);
+                        buffs->pathprefix[len] = '/';
+                        buffs->pathprefix[len + 1] = '\0';
+
+                        buffs->pathsize += len + 1;
                 }
-        } else {
-                if ((buffs->path = malloc(MAXLINE + 1)) == NULL)
-                        err(EX_SOFTWARE, "%s", errstr);
-                buffs->in = buffs->path;
-        }
+        } else
+                buffs->pathprefix = NULL;
+
+        if ((buffs->path = malloc(buffs->pathsize)) == NULL)
+                err(EX_OSERR, "malloc buffs->path");
 
         return (buffs);
 }
@@ -124,10 +126,8 @@ free_buffers(struct buffers *buffs)
 {
         assert(buffs != NULL);
 
-        if (buffs->path != NULL)
-                free(buffs->path);
-        buffs->path = NULL;
-        buffs->in = NULL;
+        free(buffs->pathprefix);
+        free(buffs->pathread);
 }
 
 struct chk_conditions *
@@ -155,18 +155,18 @@ get_conditions(struct opt_options *opts)
                 struct chk_expression *cx;
 
                 if ((cx = malloc(sizeof(*cx))) == NULL)
-                        err(EX_SOFTWARE, "could not allocate cond_expression");
+                        err(EX_OSERR, "malloc chk_expression");
 
                 ox = oe->payload;
                 cx->expression = ox->expression;
                 cx->invert = ox->invert;
                 if ((ce = create_element(cx)) == NULL)
-                        err(EX_SOFTWARE, "could not create regex element");
+                        err(EX_SOFTWARE, "create_element");
 
                 cond->regexlist = prepend_element(ce, cond->regexlist);
         }
 
-        return cond;
+        return (cond);
 }
 
 void
@@ -193,30 +193,40 @@ process_loop(struct opt_options *opts, struct chk_context *ctx, struct buffers *
         assert(buffs != NULL);
         assert(doflush == 0 || doflush == 1);
 
-        while (fgets(buffs->in, MAXLINE, stdin) != NULL) {
+        while (fgets(buffs->pathread, MAXLINE, stdin) != NULL) {
                 int             check_result;
-                char           *path = NULL;
-                char           *newline;
+                int             use_prefix;
+                char           *newline = NULL;
 
-                if ((newline = strchr(buffs->in, '\n')) != NULL)
+                if ((newline = strchr(buffs->pathread, '\n')) != NULL)
                         newline[0] = '\0';
 
-                if (buffs->in[0] == '/')
-                        path = buffs->in;
+                if (buffs->pathprefix != NULL)
+                        if (buffs->pathread[0] == '/')
+                                use_prefix = 0;
+                        else
+                                use_prefix = 1;
                 else
-                        path = buffs->path;
+                        use_prefix = 0;
 
-                check_result = chk_check_file(path, ctx);
+                if (!use_prefix) {
+                        strncpy(buffs->path, buffs->pathread, buffs->pathsize - 1);
+                        buffs->path[buffs->pathsize] = '\0';
+                } else {
+                        snprintf(buffs->path, buffs->pathsize, "%s%s", buffs->pathprefix, buffs->pathread);
+                }
+
+                check_result = chk_check_file(buffs->path, ctx);
                 assert(check_result == 0 || check_result == 1);
                 assert(opts->invert == 0 || opts->invert == 1);
                 if (check_result ^ opts->invert) {
-                        printf("%s\n", path);
+                        printf("%s\n", buffs->path);
                         if (doflush)
                                 fflush(stdout);
                 }
         }
         if (ferror(stdin))
-                err(EX_SOFTWARE, "could not completely read stdin");
+                err(EX_SOFTWARE, "fgets stdin");
 }
 
 void
@@ -230,7 +240,7 @@ fork_you(struct opt_options *opts, struct chk_context *ctx, struct buffers *buff
         assert(buffs != NULL);
 
         if ((fds = malloc(opts->processes * sizeof(int))) == NULL)
-                err(EX_SOFTWARE, "could not malloc file descriptors");
+                err(EX_OSERR, "malloc fds");
 
         for (i = 0; i < opts->processes; i++) {
                 int             j;
@@ -238,43 +248,41 @@ fork_you(struct opt_options *opts, struct chk_context *ctx, struct buffers *buff
                 pid_t           pid;
 
                 if (pipe(p) == -1)
-                        err(EX_OSERR, "could not create pipe (%d)", i);
+                        err(EX_OSERR, "pipe %d", i);
 
                 switch (pid = fork()) {
                 case -1:
-                        err(EX_OSERR, "could not fork (%d)", i);
+                        err(EX_OSERR, "fork %d", i);
                         break;
                 case 0:
                         for (j = 0; j < i; j++)
                                 if (close(fds[j]) == -1)
-                                        warn("child could not close write end of pipe: %d, %d", i, j);
+                                        warn("close %d, %d", i, j);
                         free(fds);
 
                         if (use_pipe(p) == -1)
-                                err(EX_OSERR, "child could not setup IPC");
+                                errx(EX_OSERR, "use_pipe %d", i);
+
                         process_loop(opts, ctx, buffs, 1);
-                        /*
-                         * Do not explicitely close the read end. You won't
-                         * close stdin either
-                         */
+
                         return;
                 default:
                         if (close(p[0]) == -1)
-                                warn("could not close read end of pipe: %d", i);
+                                warn("close %d", i);
                         fds[i] = p[1];
                 }
         }
 
         i = 0;
-        while (fgets(buffs->in, MAXLINE, stdin) != NULL)
-                if (write(fds[i++ % opts->processes], buffs->in, strlen(buffs->in)) == -1)
-                        warn("could not write to subprocess");
+        while (fgets(buffs->pathread, MAXLINE, stdin) != NULL)
+                if (write(fds[i++ % opts->processes], buffs->pathread, strlen(buffs->pathread)) == -1)
+                        warn("write");
         if (ferror(stdin))
-                err(EX_SOFTWARE, "could not completely read stdin");
+                err(EX_SOFTWARE, "fgets stdin");
 
         for (i = 0; i < opts->processes; i++)
                 if (close(fds[i]) == -1)
-                        warn("could not close write end of pipe: %d", i);
+                        warn("close %d", i);
 
         wait_for_childs();
 
@@ -307,6 +315,6 @@ wait_for_childs()
 
         while ((pid = wait(&sts)) != -1) {
                 if (WIFEXITED(sts) && WEXITSTATUS(sts) != 0)
-                        warn("child %d exited abnormally: %d", pid, sts);
+                        warn("child process %d exited abnormally: %d", pid, sts);
         }
 }
