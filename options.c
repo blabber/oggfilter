@@ -120,12 +120,12 @@ static void
 print_usage()
 {
         printf("This is oggfilter %s\n\n", VERSION);
-        printf("oggfilter [-l|--min-length period] [-L|--max-length period]\n");
-        printf("          [-b|--min-bitrate bitrate] [-B|--max-bitrate bitrate]\n");
-        printf("          [-x|--expression regexp] [-X|--exclude-expression regexp]\n");
-        printf("          [-d|--directory directory] [-P|--processes count]\n");
-        printf("          [-I|--no-ignorecase] [-v|--invert]\n\n");
-        printf("oggfilter {-h|--help}\n");
+        puts("oggfilter [-l|--min-length period] [-L|--max-length period]");
+        puts("          [-b|--min-bitrate bitrate] [-B|--max-bitrate bitrate]");
+        puts("          [-x|--expression regexp] [-X|--exclude-expression regexp]");
+        puts("          [-d|--directory directory] [-P|--processes count]");
+        puts("          [-I|--no-ignorecase] [-v|--invert]\n");
+        puts("oggfilter {-h|--help}");
 }
 
 static void
