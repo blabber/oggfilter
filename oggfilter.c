@@ -52,7 +52,7 @@ main(int argc, char **argv)
         struct chk_context *ctx = NULL;
         struct buffers *buffs = NULL;
 
-        if (!setlocale(LC_ALL, ""))
+        if (setlocale(LC_ALL, "") == NULL)
                 errx(EX_SOFTWARE, "setlocale LC_ALL");
 
         /* setup environment */
@@ -209,11 +209,11 @@ process_loop(struct opt_options *opts, struct chk_context *ctx, struct buffers *
                 else
                         use_prefix = 0;
 
-                if (!use_prefix) {
+                if (use_prefix) {
+                        snprintf(buffs->path, buffs->pathsize, "%s%s", buffs->pathprefix, buffs->pathread);
+                } else {
                         strncpy(buffs->path, buffs->pathread, buffs->pathsize - 1);
                         buffs->path[buffs->pathsize] = '\0';
-                } else {
-                        snprintf(buffs->path, buffs->pathsize, "%s%s", buffs->pathprefix, buffs->pathread);
                 }
 
                 check_result = chk_check_file(buffs->path, ctx);
