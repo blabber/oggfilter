@@ -229,6 +229,13 @@ other platforms.
 .
 .Sh BUGS
 .
+.Nm
+will only work correctly in locales using 8-bit charsets or multi byte charsets
+backwards compatible with ASCII (eg. UTF-8).
+.Pp
+Regular expression matching will only work if the vorbis comments are
+representible in the locale charset.
+.Pp
 Expect some rough edges as this was my first take on a C program.
 .Pp
 If you find a bug drop me a mail or file an issue at 
