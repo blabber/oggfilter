@@ -136,8 +136,6 @@ PORTABILITY
      should be no problem to write a simple Makefile for other platforms.
 
 DIAGNOSTICS
-     Messages should be self-explanatory.
-
      The oggfilter utility exits 0 on success, and >0 if an error occurs.
 
 SEE ALSO
