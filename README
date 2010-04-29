@@ -147,10 +147,10 @@ AUTHORS
 
 BUGS
      oggfilter will only work correctly in locales using 8-bit charsets or
-     multi byte charsets backwards compatible with ASCII (eg. UTF-8).
+     multi byte charsets backwards compatible with ASCII, most notably UTF-8.
 
      Regular expression matching will only work if the vorbis comments are
-     representible in the locale charset.
+     representable in the locale charset.
 
      Expect some rough edges as this was my first take on a C program.
 
