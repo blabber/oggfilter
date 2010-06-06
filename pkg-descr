@@ -1,0 +1,6 @@
+The oggfilter utility reads sequentially a list of ogg/vorbis files from
+standard input  and filters this list using various criteria defined via
+command line options. All ogg/vorbis files matching these criteria are written
+to standard output.
+
+WWW: http://github.com/tobreh/oggfilter
