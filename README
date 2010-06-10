@@ -139,7 +139,7 @@ DIAGNOSTICS
      The oggfilter utility exits 0 on success, and >0 if an error occurs.
 
 SEE ALSO
-     re_format(7), vorbiscomment(1), ogginfo(1), setlocale(3), environ(7)
+     re_format(7), vorbiscomment(1), ogginfo(1), setlocale(3), environ(7),
      xargs(1)
 
 AUTHORS
