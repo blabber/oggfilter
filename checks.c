@@ -18,6 +18,10 @@
 #include "checks.h"
 #include "list.h"
 
+enum {
+        COMMENTLEN = 256
+};
+
 struct chk_context {
         struct chk_conditions *cond;
         struct element *regexlist;
@@ -247,27 +251,34 @@ check_comments(struct oggfile *of, struct chk_context *ctx)
                 re = e->payload;
 
                 for (i = 0; i < ovc->comments; i++) {
-                        char            conv_comment_buffer[256];
                         char           *comment, *conv_comment;
-                        char          **from, **to;
+                        const char     *from;
+                        char           *to;
                         size_t          fromlen, tolen;
 
-                        conv_comment = &conv_comment_buffer[0];
+                        if ((conv_comment = malloc(COMMENTLEN)) == NULL)
+                                err(EX_SOFTWARE, "malloc(%d)", COMMENTLEN);
                         comment = ovc->user_comments[i];
-                        from = &comment;
-                        to = &conv_comment;
-                        fromlen = strlen(comment);
-                        tolen = sizeof(conv_comment_buffer);
 
+                        from = comment;
+                        to = conv_comment;
+                        fromlen = strlen(comment);
+                        tolen = COMMENTLEN;
+
+                        if (iconv(ctx->cd, NULL, NULL, &to, &tolen) == (size_t) (-1))
+                                err(EX_SOFTWARE, "reset iconv descriptor");
                         while (fromlen > 0)
-                                if (iconv(ctx->cd, (const char **)from, &fromlen, to, &tolen) == (size_t) (-1)) {
-                                        warnx("iconv \"%s\"", ovc->user_comments[i]);
+                                if (iconv(ctx->cd, &from, &fromlen, &to, &tolen) == (size_t) (-1)) {
+                                        warn("iconv \"%s\"", ovc->user_comments[i]);
+                                        free(conv_comment);
                                         return (0);
                                 }
-                        *to[0] = '\0';
+                        *to = '\0';
 
-                        if (regexec(re->regex, conv_comment_buffer, 0, NULL, 0)== 0)
+                        if (regexec(re->regex, conv_comment, 0, NULL, 0)== 0)
                                 match = 1;
+
+                        free(conv_comment);
                 }
 
                 assert(match == 0 || match == 1);
