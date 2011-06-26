@@ -1,7 +1,7 @@
 PROG=		oggfilter
 SRCS=		${PROG}.c options.c checks.c list.c
 
-CSTD?=		c89
+CSTD?=		c99
 WARNS?=		6
 WFORMAT?=	1
 # NO_WERROR is needed as libvorbis.h defines some static variables not used
@@ -9,7 +9,8 @@ WFORMAT?=	1
 # unset.  But I prefer NO_WERROR to hiding the warning.
 NO_WERROR=	yes
 
-CFLAGS+=	-I/usr/local/include
+CFLAGS+=	-D_POSIX_C_SOURCE=200809 \
+		-I/usr/local/include
 LDFLAGS+=	-L/usr/local/lib 
 LDADD+=		-lvorbisfile -liconv
 
