@@ -13,8 +13,8 @@
  */
 
 struct element {
-        void           *payload;
-        struct element *next;
+	void           *payload;
+	struct element *next;
 };
 
 struct element *create_element(void *_payload);

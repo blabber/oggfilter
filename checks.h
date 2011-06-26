@@ -18,22 +18,22 @@
  * These conditions have to be set by the caller
  */
 struct chk_conditions {
-        double          min_length;
-        double          max_length;
-        long            min_bitrate;
-        long            max_bitrate;
-        struct element *regexlist;
-        int             noignorecase;
+	double		min_length;
+	double		max_length;
+	long		min_bitrate;
+	long		max_bitrate;
+	struct element *regexlist;
+	int		noignorecase;
 };
 
 struct chk_expression {
-        char           *expression;
-        int             invert;
+	char           *expression;
+	int		invert;
 };
 
 struct chk_context;
 
-int             chk_check_file(char *_path, struct chk_context *_ctx);
+int		chk_check_file(char *_path, struct chk_context *_ctx);
 struct chk_context *chk_context_open(struct chk_conditions *_cond);
-void            chk_context_close(struct chk_context *_ctx);
-void            chk_init_conditions(struct chk_conditions *_cond);
+void		chk_context_close(struct chk_context *_ctx);
+void		chk_init_conditions(struct chk_conditions *_cond);
