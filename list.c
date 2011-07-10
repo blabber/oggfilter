@@ -14,25 +14,23 @@
 struct element *
 create_element(void *payload)
 {
-	struct element *new;
-
 	assert(payload != NULL);
 
-	if ((new = malloc(sizeof(*new))) != NULL) {
+	struct element *new = malloc(sizeof(*new));
+	if (new != NULL) {
 		new->payload = payload;
 		new->next = NULL;
 	}
+
 	return (new);
 }
 
 struct element *
 destroy_element(struct element *element)
 {
-	struct element *next;
-
 	assert(element !=NULL);
 
-	next = element->next;
+	struct element *next = element->next;
 	free(element);
 
 	return (next);

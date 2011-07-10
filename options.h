@@ -9,26 +9,27 @@
 /**
  * Required includes:
  *
+ * stdbool.h
  * list.h
  */
 
 struct opt_options {
-	double		min_length;
-	double		max_length;
-	long		min_bitrate;
-	long		max_bitrate;
-	struct element *expressionlist;
-	char           *pathprefix;
-	int		invert;
-	int		processes;
-	int		noignorecase;
-	int		print0;
+	double		 min_length;
+	double		 max_length;
+	long		 min_bitrate;
+	long		 max_bitrate;
+	struct element	*expressionlist;
+	char		*pathprefix;
+	bool		 invert;
+	bool		 processes;
+	bool		 noignorecase;
+	bool		 print0;
 };
 
 struct opt_expression {
-	char           *expression;
-	int		invert;
+	char		*expression;
+	bool		 invert;
 };
 
-struct opt_options *opt_get_options(int _argc, char *_argv[]);
-int		opt_free_options(struct opt_options *opts);
+struct opt_options 	*opt_get_options(int _argc, char *_argv[]);
+int			 opt_free_options(struct opt_options *opts);
