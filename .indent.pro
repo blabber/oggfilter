@@ -1,9 +1,0 @@
--Tbuffers
--Tchk_conditions
--Tchk_context
--Tchk_expression
--Telement
--Toggfile
--Topt_expression
--Topt_options
--Tregex
