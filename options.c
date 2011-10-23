@@ -115,6 +115,8 @@ opt_free_options(struct opt_options *opts)
 		e = destroy_element(e);
 	}
 
+	free(opts);
+
 	return (0);
 }
 

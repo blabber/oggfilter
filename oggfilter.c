@@ -136,8 +136,8 @@ process_loop(struct opt_options *opts, struct chk_context *ctx, bool doflush)
 		if (pathprefix != NULL && pathread[0] != '/')
 			snprintf(path, LINE_MAX, "%s/%s", pathprefix, pathread);
 		else {
-			strncpy(path, pathread, LINE_MAX - 1);
-			path[LINE_MAX] = '\0';
+			strncpy(path, pathread, LINE_MAX - 2);
+			path[LINE_MAX - 1] = '\0';
 		}
 		free(pathprefix);
 

@@ -135,8 +135,9 @@ chk_context_close(struct chk_context *ctx)
 	while (ctx->regexlist != NULL) {
 		struct regex *r = ctx->regexlist->payload;
 		regfree(r->regex);
-		// XXX nicht benötigt?  free(r->regex);
+		free(r->regex);
 		ctx->regexlist = destroy_element(ctx->regexlist);
+		free(r);
 	}
 
 	free(ctx);
