@@ -230,11 +230,11 @@ check_comments(struct oggfile *of, struct chk_context *ctx)
 		return (false);
 	}
 	for (struct element *e = ctx->regexlist; e != NULL; e = e->next) {
-		int		match = 0;
+		int match = 0;
 		struct regex *re = e->payload;
 
 		for (int i = 0; i < ovc->comments; i++) {
-			char           *comment, *conv_comment;
+			char *comment, *conv_comment;
 			if ((conv_comment = malloc(COMMENTLEN)) == NULL)
 				err(EXIT_FAILURE, "malloc(%d)", COMMENTLEN);
 			comment = ovc->user_comments[i];
