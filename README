@@ -155,6 +155,6 @@ BUGS
      Expect some rough edges as this was my first take on a C program.
 
      If you find a bug drop me a mail or file an issue at
-           http://github.com/tobreh/oggfilter/issues
+           http://github.com/blabber/oggfilter/issues
 
-FreeBSD 8.0                     March 25, 2009                     FreeBSD 8.0
+FreeBSD 8.2                     March 25, 2009                     FreeBSD 8.2
