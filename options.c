@@ -121,7 +121,7 @@ opt_free_options(struct opt_options *opts)
 }
 
 static void
-print_usage()
+print_usage(void)
 {
 	printf("This is oggfilter %s\n\n", VERSION);
 	puts("oggfilter [-l|--min-length period] [-L|--max-length period]");

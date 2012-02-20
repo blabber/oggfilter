@@ -251,7 +251,7 @@ use_pipe(int *p)
 }
 
 static void
-wait_for_childs()
+wait_for_childs(void)
 {
 	pid_t pid;
 	int sts;
