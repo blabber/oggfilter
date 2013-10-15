@@ -12,7 +12,7 @@ NO_WERROR=	yes
 CFLAGS+=	-D_POSIX_C_SOURCE=200809 \
 		-I/usr/local/include
 LDFLAGS+=	-L/usr/local/lib 
-LDADD+=		-lvorbisfile -liconv
+LDADD+=		-lvorbisfile ${ICONV_LIB}
 
 CLEANFILES=	*.[Bb][Aa][Kk] *.core
 CTAGS=		ctags
