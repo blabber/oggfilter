@@ -5,7 +5,7 @@
 # $FreeBSD$
 
 PORTNAME=	oggfilter
-PORTVERSION=	1.4.0
+PORTVERSION=	1.4.1
 CATEGORIES=	audio
 MASTER_SITES=	# No master site
 DISTFILES=	${PORTNAME}-${TAG}.tar
