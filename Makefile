@@ -6,6 +6,7 @@
 
 PORTNAME=	oggfilter
 PORTVERSION=	1.4.1
+PORTREVISION=	1
 CATEGORIES=	audio
 MASTER_SITES=	# No master site
 DISTFILES=	${PORTNAME}-${TAG}.tar
@@ -16,7 +17,7 @@ COMMENT=	A simple command-line tool used to filter a list of ogg/vorbis files
 FETCH_DEPENDS=	git:${PORTSDIR}/devel/git
 LIB_DEPENDS=	vorbis.4:${PORTSDIR}/audio/libvorbis
 
-USE_ICONV=	yes
+USES=		iconv
 
 MAKE_ARGS=	BINDIR=${PREFIX}/bin \
 		MANDIR=${PREFIX}/man/man \
